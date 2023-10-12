@@ -63,6 +63,7 @@ def render_floor(x, y, height, cos2, player_x, cos, player_y, sin, frame_buffer,
                 (map_height[int(x) % (MAP_SIZE - 1)][int(y - 0.33) % (MAP_SIZE - 1)] and x % 1 > y % 1):
             shading = shading * 0.5
 
+        # Texturing the floor
         frame_buffer[column][2 * HALF_VERTICAL_RESOLUTION - row - 1] = shading * (floor_texture[texture_x][texture_y] * 2 + frame_buffer[column][2 * HALF_VERTICAL_RESOLUTION - row - 1]) / 3
 
         # Check if the player is near the exit and apply a special effect
