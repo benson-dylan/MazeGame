@@ -10,7 +10,8 @@ from pyrr import *
 pg.init()
 
 pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 0)
+pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
 
 clock = pg.time.Clock()
 pg.mouse.set_visible(False)
@@ -24,7 +25,7 @@ pg.display.set_mode((width, height), pg.OPENGL | pg.DOUBLEBUF)
 glClearColor(0.2, 0.5, 0.2, 1.0)
 glEnable(GL_DEPTH_TEST)
 
-shader = sl.ShaderProgram("../assets/shaders/vert.glsl", "../assets/shaders/frag.glsl")
+shader = sl.ShaderProgram("MazeGame/assets/shaders/vert.glsl", "MazeGame/assets/shaders/frag.glsl")
 
 vertices = (
             # Position        # texture         # color
