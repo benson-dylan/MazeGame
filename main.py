@@ -26,7 +26,7 @@ def main():
     frame_buffer = np.random.uniform(0,1, (HORIZONTAL_RESOLUTION, HALF_VERTICAL_RESOLUTION*2, 3))
     sky_texture = pg.surfarray.array3d(pg.transform.smoothscale(pg.image.load('resources/textures/sky.png'), (720, HALF_VERTICAL_RESOLUTION * 2))) / 255
     floor_texture = pg.surfarray.array3d(pg.image.load('resources/textures/floor.jpg')) / 255
-    wall_texture = pg.surfarray.array3d(pg.image.load('wall.jpg')) / 255
+    wall_texture = pg.surfarray.array3d(pg.image.load('resources/textures/wall.png')) / 255
     sprites, sprite_size = load_sprites()
     
     # Spawn the enemies at different locations

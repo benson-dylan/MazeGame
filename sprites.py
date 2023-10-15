@@ -8,13 +8,15 @@ def load_sprites():
     zombie_skeleton_sheet  = pg.image.load('zombie_n_skeleton4.png').convert_alpha()
     sprites = [[], []]
 
-    for i in range(3):
-        xx = i*32
+    for i in range(3): # Column
+        xx = i*32 # Sprite width
         sprites[0].append([])
         sprites[1].append([])
-        for j in range(4):
-            yy = j * 100
+        for j in range(4): # Row
+            yy = j * 100 # Sprite height
+            # Load Zombie
             sprites[0][i].append(pg.Surface.subsurface(zombie_skeleton_sheet ,(xx , yy, 32, 100)))
+            # Load Skeleton
             sprites[1][i].append(pg.Surface.subsurface(zombie_skeleton_sheet ,(xx + 96, yy, 32, 100)))
 
     sprite_size = np.asarray(sprites[0][1][0].get_size()) * HORIZONTAL_RESOLUTION / 800
