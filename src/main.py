@@ -25,7 +25,10 @@ pg.display.set_mode((width, height), pg.OPENGL | pg.DOUBLEBUF)
 glClearColor(0.2, 0.5, 0.2, 1.0)
 glEnable(GL_DEPTH_TEST)
 
-shader = sl.ShaderProgram("MazeGame/assets/shaders/vert.glsl", "MazeGame/assets/shaders/frag.glsl")
+
+vao = glGenVertexArrays(1)
+glBindVertexArray(vao)                 # Bind the VAO. That is, make it the active one.
+shader = sl.ShaderProgram("assets/shaders/vert.glsl", "assets/shaders/frag.glsl")
 
 vertices = (
             # Position        # texture         # color
@@ -49,9 +52,6 @@ offset_texture = size_position * 4                  # offset of the texture data
 offset_color = (size_position + size_texture) * 4   # offset of the color data. Color data starts after 5 floats (20 bytes) of position and texture data
 n_vertices = len(vertices) // (size_position + size_texture + size_color)
 
-vao = glGenVertexArrays(1)
-glBindVertexArray(vao)                 # Bind the VAO. That is, make it the active one.
-
 # Create a Vertex Buffer Object (VBO) to store the vertex data
 vbo = glGenBuffers(1)                  # Generate one buffer and store its ID.
 glBindBuffer(GL_ARRAY_BUFFER, vbo)     # Bind the buffer. That is, make it the active one.
@@ -73,7 +73,7 @@ glBindAttribLocation(shader.shader, color_loc, "color")
 glVertexAttribPointer(color_loc, size_color, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(offset_color))
 glEnableVertexAttribArray(color_loc)
 
-img_data, img_width, img_height = load_image("../assets/textures/Front.bmp")
+img_data, img_width, img_height = load_image("assets/textures/Front.bmp")
 
 texture_id = glGenTextures(1)
 glBindTexture(GL_TEXTURE_2D, texture_id)        # Bind the texture object. That is, make it the active one.
