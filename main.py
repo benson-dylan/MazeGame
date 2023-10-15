@@ -2,17 +2,20 @@
 import pygame as pg
 import numpy as np
 from numba import njit
+from pygame import font
 
 # Dependencies
 from constants import *
 from player_movement import movement
 from maze_generator import generate_maze
 from frame_renderer import new_frame
-from enemy_logic import update_enemies, spawn_enemies
+from enemy_logic import update_enemies, spawn_enemies, check_player_enemy_collision
 from sprites import load_sprites, draw_sprites
 
 def main():
     pg.init()
+    pg.font.init()
+    font = pg.font.Font('PixelifySans-Bold.ttf', 50)
     screen = pg.display.set_mode(RESOLUTION)
     running = True
     clock = pg.time.Clock()
@@ -70,6 +73,12 @@ def main():
         fps = int(clock.get_fps())
         pg.display.set_caption("Enemies remaining: " + str(NUM_ENEMIES) + " - FPS: " + str(fps))
         player_x, player_y, player_rotation = movement(pg.key.get_pressed(), player_x, player_y, player_rotation, maze, elapsed_time)
+        if check_player_enemy_collision(player_x, player_y, enemies):
+            running = False
+            death_surface = font.render('You died!', True, (255, 0, 0))
+            screen.blit(death_surface, (WIDTH//2 - death_surface.get_width()//2, HEIGHT//2 - death_surface.get_height()//2))
+            pg.display.update()
+            pg.time.wait(2000)
 
 if __name__ == '__main__':
     main()

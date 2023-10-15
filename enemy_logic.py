@@ -69,3 +69,13 @@ def spawn_enemies(num_enemies_to_spawn, maze):
 
     return np.asarray(enemies)
 
+
+def check_player_enemy_collision(player_x, player_y, enemies):
+    for enemy in enemies:
+        enemy_x, enemy_y = enemy[0], enemy[1]
+        distance = np.sqrt((player_x - enemy_x)**2 + (player_y - enemy_y)**2)
+        if distance < .5: 
+            return True
+    return False
+
+
