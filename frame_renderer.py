@@ -4,14 +4,16 @@ from numba import njit
 from constants import *
 
 @njit()
-def render_wall(x, y, map_height, player_x, player_y, player_rotation, frame_buffer, wall_texture, column, cos, sin, cos2):
+def render_wall(x, y, maze, player_x, player_y, player_rotation, frame_buffer, wall_texture, column, cos, sin, cos2):
     # Cast a ray until it hits a wall
-    while map_height[int(x) % (MAP_SIZE - 1)][int(y) % (MAP_SIZE - 1)] == 0:
-        x, y = x + 0.01 * cos, y + 0.01 * sin
+    step_size = 0.01
+    while maze[int(x) % (MAP_SIZE - 1)][int(y) % (MAP_SIZE - 1)] == 0:
+        x += step_size * cos
+        y += step_size * sin
 
     # Calculate the height of the wall column
-    distance = np.sqrt((x-player_x) ** 2 + (y - player_y) ** 2)    
-    height = int(HALF_VERTICAL_RESOLUTION/(distance*cos2 + 0.001))
+    distance = np.sqrt((x - player_x) ** 2 + (y - player_y) ** 2)
+    height = int(HALF_VERTICAL_RESOLUTION / (distance * cos2 + 0.001))
 
     # Determine which part of the wall texture to use
     texture_x = int(x * 3 % 1 * 99)        
@@ -21,16 +23,14 @@ def render_wall(x, y, map_height, player_x, player_y, player_rotation, frame_buf
     texture_y = np.linspace(0, 3, height * 2) * 99 % 99
 
     # Calculate shading based on wall height
-    shading = 0.3 + 0.7 * (height / HALF_VERTICAL_RESOLUTION)
-    if shading > 1:
-        shading = 1
+    shading = min(1.0, 0.3 + 0.7 * (height / HALF_VERTICAL_RESOLUTION))
     
     # Handle transparent walls (ash) and shading
     ash = 0
-    if map_height[int(x - 0.33) % (MAP_SIZE - 1)][int(y - 0.33) % (MAP_SIZE - 1)]:
+    if maze[int(x - 0.33) % (MAP_SIZE - 1)][int(y - 0.33) % (MAP_SIZE - 1)]:
         ash = 1
         
-    if map_height[int(x - 0.01) % (MAP_SIZE - 1)][int(y - 0.01) % (MAP_SIZE - 1)]:
+    if maze[int(x - 0.01) % (MAP_SIZE - 1)][int(y - 0.01) % (MAP_SIZE - 1)]:
         shading = shading * 0.5
         ash = 0
     
@@ -48,7 +48,7 @@ def render_wall(x, y, map_height, player_x, player_y, player_rotation, frame_buf
     return frame_buffer, x, y, height
 
 @njit()
-def render_floor(x, y, height, cos2, player_x, cos, player_y, sin, frame_buffer, column, floor_texture, map_height, exit_x, exit_y):
+def render_floor(x, y, height, cos2, player_x, cos, player_y, sin, frame_buffer, column, floor_texture, maze, exit_x, exit_y):
     # Render the floor and apply shading
     for row in range(HALF_VERTICAL_RESOLUTION - height):
         distance = (HALF_VERTICAL_RESOLUTION / (HALF_VERTICAL_RESOLUTION - row)) / cos2
@@ -56,15 +56,13 @@ def render_floor(x, y, height, cos2, player_x, cos, player_y, sin, frame_buffer,
         texture_x, texture_y = int(x * 3 % 1 * 99), int(y * 3 % 1 * 99)
 
         shading = 0.2 + 0.8 * (1 - row / HALF_VERTICAL_RESOLUTION)
-        if map_height[int(x - 0.33) % (MAP_SIZE - 1)][int(y - 0.33) % (MAP_SIZE - 1)]:
-            shading = shading * 0.5
-            
-        elif (map_height[int(x - 0.33) % (MAP_SIZE - 1)][int(y) % (MAP_SIZE - 1)] and y % 1 > x % 1) or \
-                (map_height[int(x) % (MAP_SIZE - 1)][int(y - 0.33) % (MAP_SIZE - 1)] and x % 1 > y % 1):
-            shading = shading * 0.5
+        if maze[int(x - 0.33) % (MAP_SIZE - 1)][int(y - 0.33) % (MAP_SIZE - 1)] or \
+           (maze[int(x - 0.33) % (MAP_SIZE - 1)][int(y) % (MAP_SIZE - 1)] and y % 1 > x % 1) or \
+           (maze[int(x) % (MAP_SIZE - 1)][int(y - 0.33) % (MAP_SIZE - 1)] and x % 1 > y % 1):
+            shading *= 0.5
 
-        # Texturing the floor
-        frame_buffer[column][2 * HALF_VERTICAL_RESOLUTION - row - 1] = shading * (floor_texture[texture_x][texture_y] * 2 + frame_buffer[column][2 * HALF_VERTICAL_RESOLUTION - row - 1]) / 3
+        reflection = frame_buffer[column][2 * HALF_VERTICAL_RESOLUTION - row - 1]
+        frame_buffer[column][2 * HALF_VERTICAL_RESOLUTION - row - 1] = (shading * (floor_texture[texture_x][texture_y] * 2 + reflection) / 4)
 
         # Check if the player is near the exit and apply a special effect
         if int(x) == exit_x and int(y) == exit_y and (x % 1 - 0.5) ** 2 + (y % 1 - 0.5) ** 2 < 0.2:
@@ -75,7 +73,7 @@ def render_floor(x, y, height, cos2, player_x, cos, player_y, sin, frame_buffer,
     return frame_buffer
 
 @njit()
-def new_frame(player_x, player_y, player_rotation, frame_buffer, sky_texture, floor_texture, map_height, wall_texture, exit_x, exit_y):
+def new_frame(player_x, player_y, player_rotation, frame_buffer, sky_texture, floor_texture, maze, wall_texture, exit_x, exit_y):
     for column in range(HORIZONTAL_RESOLUTION):
         # Calculate the current rotation angle
         rotation_angle = player_rotation + np.deg2rad(column / SCALING_FACTOR - 30)
@@ -88,7 +86,7 @@ def new_frame(player_x, player_y, player_rotation, frame_buffer, sky_texture, fl
         y = player_y
 
         # Render wall and floor
-        frame_buffer, x, y, height = render_wall(x, y, map_height, player_x, player_y, player_rotation, frame_buffer, wall_texture, column, cos, sin, cos2)
-        frame_buffer = render_floor(x, y, height, cos2, player_x, cos, player_y, sin, frame_buffer, column, floor_texture, map_height, exit_x, exit_y)
+        frame_buffer, x, y, height = render_wall(x, y, maze, player_x, player_y, player_rotation, frame_buffer, wall_texture, column, cos, sin, cos2)
+        frame_buffer = render_floor(x, y, height, cos2, player_x, cos, player_y, sin, frame_buffer, column, floor_texture, maze, exit_x, exit_y)
         
     return frame_buffer

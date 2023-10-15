@@ -20,7 +20,7 @@ def main():
     pg.event.set_grab(1)
 
     # Generate the maze
-    player_x, player_y, player_rotation, map_height, exit_x, exit_y = generate_maze()
+    player_x, player_y, player_rotation, maze, exit_x, exit_y = generate_maze()
     
     # Load the textures and sprites
     frame_buffer = np.random.uniform(0,1, (HORIZONTAL_RESOLUTION, HALF_VERTICAL_RESOLUTION*2, 3))
@@ -30,7 +30,7 @@ def main():
     sprites, sprite_size = load_sprites()
     
     # Spawn the enemies at different locations
-    enemies = spawn_enemies(NUM_ENEMIES, map_height)
+    enemies = spawn_enemies(NUM_ENEMIES, maze)
 
     # Main render loop
     while running:
@@ -54,11 +54,11 @@ def main():
         
         # Update the frame buffer
         frame_buffer = new_frame(player_x, player_y, player_rotation, frame_buffer, sky_texture, 
-                                 floor_texture, map_height, wall_texture, exit_x, exit_y)
+                                 floor_texture, maze, wall_texture, exit_x, exit_y)
         surface = pg.surfarray.make_surface(frame_buffer * 255)
         
         # Update the enemies and draw sprites
-        enemies = update_enemies(player_x, player_y, player_rotation, enemies, map_height, elapsed_time/5)
+        enemies = update_enemies(player_x, player_y, player_rotation, enemies, maze, elapsed_time/5)
         surface, en = draw_sprites(surface, sprites, enemies, sprite_size, ticks)
 
         # Scale the surface to match the screen resolution
@@ -69,7 +69,7 @@ def main():
         pg.display.update()
         fps = int(clock.get_fps())
         pg.display.set_caption("Enemies remaining: " + str(NUM_ENEMIES) + " - FPS: " + str(fps))
-        player_x, player_y, player_rotation = movement(pg.key.get_pressed(), player_x, player_y, player_rotation, map_height, elapsed_time)
+        player_x, player_y, player_rotation = movement(pg.key.get_pressed(), player_x, player_y, player_rotation, maze, elapsed_time)
 
 if __name__ == '__main__':
     main()

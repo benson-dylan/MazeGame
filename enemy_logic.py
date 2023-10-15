@@ -4,18 +4,22 @@ from numba import njit
 from constants import *
 
 @njit()
-def update_enemies(player_x, player_y, player_rotation, enemies, map_height, elapsed_time):
+def update_enemies(player_x, player_y, player_rotation, enemies, maze, elapsed_time):
     for enemy in range(len(enemies)):
         # Calculate the new position based on enemy movement
         cos, sin = elapsed_time * np.cos(enemies[enemy][6]), elapsed_time * np.sin(enemies[enemy][6])
         new_x, new_y = enemies[enemy][0] + cos, enemies[enemy][1] + sin
 
-        # Check for collision with walls
-        if (map_height[int(new_x - 0.1) % (MAP_SIZE - 1)][int(new_y - 0.1) % (MAP_SIZE - 1)] or
-            map_height[int(new_x - 0.1) % (MAP_SIZE - 1)][int(new_y + 0.1) % (MAP_SIZE - 1)] or
-            map_height[int(new_x + 0.1) % (MAP_SIZE - 1)][int(new_y - 0.1) % (MAP_SIZE - 1)] or
-            map_height[int(new_x + 0.1) % (MAP_SIZE - 1)][int(new_y + 0.1) % (MAP_SIZE - 1)]):
-            # Revert to the original position and change direction randomly
+        # Check for wall collisions using the map data
+        wall_collision = False
+        for dx in [-0.1, 0.1]:
+            for dy in [-0.1, 0.1]:
+                if maze[int(new_x + dx) % (MAP_SIZE - 1)][int(new_y + dy) % (MAP_SIZE - 1)]:
+                    wall_collision = True
+                    break
+
+        if wall_collision:
+            # When AI hits the wall, they will change direction
             new_x, new_y = enemies[enemy][0], enemies[enemy][1]
             enemies[enemy][6] = enemies[enemy][6] + np.random.uniform(-0.5, 0.5)
         else:
@@ -40,8 +44,8 @@ def update_enemies(player_x, player_y, player_rotation, enemies, map_height, ela
             x, y = new_x, new_y
             for i in range(int((1 / enemies[enemy][3]) / 0.05)):
                 x, y = x + 0.05 * cos, y + 0.05 * sin
-                if (map_height[int(x - 0.02 * cos) % (MAP_SIZE - 1)][int(y) % (MAP_SIZE - 1)] or
-                    map_height[int(x) % (MAP_SIZE - 1)][int(y - 0.02 * sin) % (MAP_SIZE - 1)]):
+                if (maze[int(x - 0.02 * cos) % (MAP_SIZE - 1)][int(y) % (MAP_SIZE - 1)] or
+                    maze[int(x) % (MAP_SIZE - 1)][int(y - 0.02 * sin) % (MAP_SIZE - 1)]):
                     enemies[enemy][3] = 9999
                     break
         else:
@@ -51,20 +55,17 @@ def update_enemies(player_x, player_y, player_rotation, enemies, map_height, ela
     enemies = enemies[enemies[:, 3].argsort()]
     return enemies
 
-def spawn_enemies(number, map_height):
+def spawn_enemies(num_enemies_to_spawn, maze):
     enemies = []
-    for i in range(number):
+    while len(enemies) < num_enemies_to_spawn:
         x, y = np.random.uniform(1, MAP_SIZE - 2), np.random.uniform(1, MAP_SIZE - 2)
-        while (map_height[int(x-0.1)%(MAP_SIZE-1)][int(y-0.1)%(MAP_SIZE-1)] or
-               map_height[int(x-0.1)%(MAP_SIZE-1)][int(y+0.1)%(MAP_SIZE-1)] or
-               map_height[int(x+0.1)%(MAP_SIZE-1)][int(y-0.1)%(MAP_SIZE-1)] or
-               map_height[int(x+0.1)%(MAP_SIZE-1)][int(y+0.1)%(MAP_SIZE-1)]):
-            x, y = np.random.uniform(1, MAP_SIZE-1), np.random.uniform(1, MAP_SIZE-1)
 
-        angle_to_player, inverse_distance_to_player, direction_to_player = 0, 0, 0 # angle, inv dist, direction_to_player relative to player
-        entype = np.random.choice([0,1]) # 0 zombie, 1 skeleton
-        direction = np.random.uniform(0, 2*np.pi) # facing direction
-        map_location = np.random.uniform(7, 10)
-        enemies.append([x, y, angle_to_player, inverse_distance_to_player, entype, map_location, direction, direction_to_player])
+        if not any(maze[int(x + dx) % (MAP_SIZE - 1)][int(y + dy) % (MAP_SIZE - 1)] for dx in [-0.1, 0.1] for dy in [-0.1, 0.1]):
+            angle_to_player, inverse_distance_to_player, direction_to_player = 0, 0, 0  # angle, inv dist, direction_to_player relative to player
+            entype = np.random.choice([0, 1])  # 0 zombie, 1 skeleton
+            direction = np.random.uniform(0, 2 * np.pi)  # facing direction
+            map_location = np.random.uniform(7, 10)
+            enemies.append([x, y, angle_to_player, inverse_distance_to_player, entype, map_location, direction, direction_to_player])
 
     return np.asarray(enemies)
+
