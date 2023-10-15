@@ -1,131 +1,76 @@
+# Modules
 import pygame as pg
-from OpenGL.GL import *
 import numpy as np
-import shaderLoaderV3 as sl
-from utils import load_image
-from input import escape_game, handle_camera_movement, handle_camera_target
-from camera import Camera
-from pyrr import *
+from numba import njit
 
-pg.init()
+# Dependencies
+from constants import *
+from player_movement import movement
+from maze_generator import generate_maze
+from frame_renderer import new_frame
+from enemy_logic import update_enemies, spawn_enemies
+from sprites import load_sprites, draw_sprites
 
-pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 0)
-pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
+def main():
+    pg.init()
+    screen = pg.display.set_mode(RESOLUTION)
+    running = True
+    clock = pg.time.Clock()
+    pg.mouse.set_visible(False)
+    pg.event.set_grab(1)
 
-clock = pg.time.Clock()
-pg.mouse.set_visible(False)
+    # Generate the maze
+    player_x, player_y, player_rotation, maze, exit_x, exit_y = generate_maze()
+    
+    # Load the textures and sprites
+    frame_buffer = np.random.uniform(0,1, (HORIZONTAL_RESOLUTION, HALF_VERTICAL_RESOLUTION*2, 3))
+    sky_texture = pg.surfarray.array3d(pg.transform.smoothscale(pg.image.load('resources/textures/sky.png'), (720, HALF_VERTICAL_RESOLUTION * 2))) / 255
+    floor_texture = pg.surfarray.array3d(pg.image.load('resources/textures/floor.jpg')) / 255
+    wall_texture = pg.surfarray.array3d(pg.image.load('resources/textures/wall.png')) / 255
+    sprites, sprite_size = load_sprites()
+    
+    # Spawn the enemies at different locations
+    enemies = spawn_enemies(NUM_ENEMIES, maze)
 
-width = 800
-height = 600
-aspect = width / height
+    # Main render loop
+    while running:
+        ticks = pg.time.get_ticks() / 200
+        elapsed_time = min(clock.tick() / 500, 0.3)
 
-pg.display.set_mode((width, height), pg.OPENGL | pg.DOUBLEBUF)
+        # Check if the player has reached the exit
+        if int(player_x) == exit_x and int(player_y) == exit_y:
+            print("You got out of the maze!")
+            
+            """ if NUM_ENEMIES < MAP_SIZE:
+                pg.time.wait(1000)
+                running = False
+            elif int(ticks % 10 + 0.9) == 0:
+                print("There is still work to do...") """
 
-glClearColor(0.2, 0.5, 0.2, 1.0)
-glEnable(GL_DEPTH_TEST)
+        # Exit the game when ESC is pressed
+        for event in pg.event.get():
+            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                running = False
+        
+        # Update the frame buffer
+        frame_buffer = new_frame(player_x, player_y, player_rotation, frame_buffer, sky_texture, 
+                                 floor_texture, maze, wall_texture, exit_x, exit_y)
+        surface = pg.surfarray.make_surface(frame_buffer * 255)
+        
+        # Update the enemies and draw sprites
+        enemies = update_enemies(player_x, player_y, player_rotation, enemies, maze, elapsed_time/5)
+        surface, en = draw_sprites(surface, sprites, enemies, sprite_size, ticks)
 
+        # Scale the surface to match the screen resolution
+        surface = pg.transform.scale(surface, RESOLUTION)
 
-vao = glGenVertexArrays(1)
-glBindVertexArray(vao)                 # Bind the VAO. That is, make it the active one.
-shader = sl.ShaderProgram("assets/shaders/vert.glsl", "assets/shaders/frag.glsl")
+        # Display the surface on the screen
+        screen.blit(surface, (0, 0))
+        pg.display.update()
+        fps = int(clock.get_fps())
+        pg.display.set_caption("Enemies remaining: " + str(NUM_ENEMIES) + " - FPS: " + str(fps))
+        player_x, player_y, player_rotation = movement(pg.key.get_pressed(), player_x, player_y, player_rotation, maze, elapsed_time)
 
-vertices = (
-            # Position        # texture         # color
-            -0.5, -0.5, 0.0,    0.0, 0.0,         1.0, 0.0, 0.0,      # vertex 1
-             0.5, -0.5, 0.0,    1.0, 0.0,         0.0, 1.0, 0.0,      # vertex 2
-             0.5,  0.5, 0.0,    1.0, 1.0,         0.0, 0.0, 1.0,       # vertex 3
-
-            -0.5, -0.5, 0.0,    0.0, 0.0,         1.0, 0.0, 0.0,      # vertex 4
-             0.5,  0.5, 0.0,    1.0, 1.0,         0.0, 0.0, 1.0,      # vertex 5
-            -0.5,  0.5, 0.0,    0.0, 1.0,         0.0, 1.0, 0.0       # vertex 6
-)
-vertices = np.array(vertices, dtype=np.float32)
-
-size_position = 3       # x, y, z
-size_texture = 2        # s, t
-size_color = 3          # r, g, b
-
-stride = (size_position + size_texture + size_color) * 4   # size of a single vertex in bytes
-offset_position = 0                                 # offset of the position data
-offset_texture = size_position * 4                  # offset of the texture data. Texture data starts after 3 floats (12 bytes) of position data
-offset_color = (size_position + size_texture) * 4   # offset of the color data. Color data starts after 5 floats (20 bytes) of position and texture data
-n_vertices = len(vertices) // (size_position + size_texture + size_color)
-
-# Create a Vertex Buffer Object (VBO) to store the vertex data
-vbo = glGenBuffers(1)                  # Generate one buffer and store its ID.
-glBindBuffer(GL_ARRAY_BUFFER, vbo)     # Bind the buffer. That is, make it the active one.
-glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)   # Upload the data to the GPU.
-
-position_loc = 0
-glBindAttribLocation(shader.shader, position_loc, "position")
-glVertexAttribPointer(position_loc, size_position, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(offset_position))
-glEnableVertexAttribArray(position_loc)
-
-# texture attribute
-texture_loc = 1
-glBindAttribLocation(shader.shader, texture_loc, "uv")
-glVertexAttribPointer(texture_loc, size_texture, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(offset_texture))
-glEnableVertexAttribArray(texture_loc)
-
-color_loc = 2
-glBindAttribLocation(shader.shader, color_loc, "color")
-glVertexAttribPointer(color_loc, size_color, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(offset_color))
-glEnableVertexAttribArray(color_loc)
-
-img_data, img_width, img_height = load_image("assets/textures/Front.bmp")
-
-texture_id = glGenTextures(1)
-glBindTexture(GL_TEXTURE_2D, texture_id)        # Bind the texture object. That is, make it the active one.
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)    # Set the texture wrapping parameters
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)    # Set texture filtering parameters
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-
-glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img_width, img_height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-shader["tex"] = 0
-
-glActiveTexture(GL_TEXTURE0)
-glBindTexture(GL_TEXTURE_2D, texture_id)
-
-camera = Camera([0.0, 0.0, 3.0], [0.0, 1.0, 0.0])
-fov = 45
-fov_radians = np.radians(fov)
-projection_matrix = Matrix44.perspective_projection(fov_radians, aspect, 0.1, 1000)
-
-draw = True
-while draw:
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            draw = False
-        escape_game(event)
-
-    pg.event.set_grab(True)
-
-    keys = pg.key.get_pressed()
-    mouse = pg.mouse.get_rel()
-    handle_camera_movement(camera, keys)
-    handle_camera_target(camera, mouse)
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-    glUseProgram(shader.shader)  # Use the shader program
-
-    camera.update_view_matrix()
-    view_matrix = camera.get_view_matrix()
-    glUniformMatrix4fv(glGetUniformLocation(shader.shader, "view"), 1, GL_FALSE, view_matrix)
-    glUniformMatrix4fv(glGetUniformLocation(shader.shader, "projection"), 1, GL_FALSE, projection_matrix)
-
-    # bind the VAO, and draw the triangle.
-    glBindVertexArray(vao)
-    glDrawArrays(GL_TRIANGLES, 0, n_vertices)      # Draw the triangle
-
-    pg.display.flip()
-    clock.tick(60)
-    pg.event.pump()
-
-pg.quit()
-quit()
-
-
-
+if __name__ == '__main__':
+    main()
+    pg.quit()
