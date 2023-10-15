@@ -17,12 +17,25 @@ class App:
         #Background Color
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
+        glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
         glUseProgram(self.shader.shader)
         glUniform1i(glGetUniformLocation(self.shader.shader, "imageTexture"), 0)
-        self.triangle = Triangle()
+        self.cube = Cube(
+            position=[0,0,-3],
+            eulers=[0,0,0]
+        )
+
+        self.cube_mesh = CubeMesh()
+
         self.sky_texture = Material("../assets/textures/Teefy.png")
+
+        projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 10, np.float32)
+        glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
+
+        self.modelMatrixLocation = glGetUniformLocation(self.shader.shader, "model_matrix")
+
         self.mainLoop()
 
     def createShader(self, vertexFilepath, fragmentFilepath):
@@ -37,13 +50,25 @@ class App:
             for event in pg.event.get():
                 if (event.type == pg.QUIT):
                     draw = False
+            
+            #Update Cube
+            self.cube.eulers[2] += 0.2
+            if(self.cube.eulers[2] > 360):
+                self.cube.eulers[2] -= 360
+            
             #Refresh screen
-            glClear(GL_COLOR_BUFFER_BIT)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             glUseProgram(self.shader.shader)
             self.sky_texture.use()
-            glBindVertexArray(self.triangle.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.triangle.n_vertices)
+
+            model_transforms = pyrr.matrix44.create_identity(dtype=np.float32)
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(self.cube.eulers), dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(self.cube.position, dtype=np.float32))
+
+            glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, model_transforms)
+            glBindVertexArray(self.cube_mesh.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.n_vertices)
             pg.display.flip()
 
             #Timing
@@ -51,24 +76,75 @@ class App:
         self.quit()
 
     def quit(self):
-        self.triangle.destroy()
+        self.cube_mesh.destroy()
         glDeleteProgram(self.shader.shader)
         self.sky_texture.destroy()
         pg.QUIT
 
-class Triangle:
+class Cube:
+
+    def __init__(self, position, eulers):
+        
+        self.position = np.array(position, dtype=np.float32)
+        self.eulers = np.array(eulers, dtype=np.float32)
+
+class CubeMesh:
 
     def __init__(self):
         
-        # x, y, z, r, g, b
+        # x, y, z, s, t
         self.vertices = (
-            -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
-             0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
-             0.0,  0.5, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0
+            -0.5, -0.5, -0.5, 0, 0,
+             0.5, -0.5, -0.5, 1, 0,
+             0.5,  0.5, -0.5, 1, 1,
+
+             0.5,  0.5, -0.5, 1, 1,
+            -0.5,  0.5, -0.5, 0, 1,
+            -0.5, -0.5, -0.5, 0, 0,
+
+            -0.5, -0.5,  0.5, 0, 0,
+             0.5, -0.5,  0.5, 1, 0,
+             0.5,  0.5,  0.5, 1, 1,
+
+             0.5,  0.5,  0.5, 1, 1,
+            -0.5,  0.5,  0.5, 0, 1,
+            -0.5, -0.5,  0.5, 0, 0,
+
+            -0.5,  0.5,  0.5, 1, 0,
+            -0.5,  0.5, -0.5, 1, 1,
+            -0.5, -0.5, -0.5, 0, 1,
+
+            -0.5, -0.5, -0.5, 0, 1,
+            -0.5, -0.5,  0.5, 0, 0,
+            -0.5,  0.5,  0.5, 1, 0,
+
+             0.5,  0.5,  0.5, 1, 0,
+             0.5,  0.5, -0.5, 1, 1,
+             0.5, -0.5, -0.5, 0, 1,
+
+             0.5, -0.5, -0.5, 0, 1,
+             0.5, -0.5,  0.5, 0, 0,
+             0.5,  0.5,  0.5, 1, 0,
+
+            -0.5, -0.5, -0.5, 0, 1,
+             0.5, -0.5, -0.5, 1, 1,
+             0.5, -0.5,  0.5, 1, 0,
+
+             0.5, -0.5,  0.5, 1, 0,
+            -0.5, -0.5,  0.5, 0, 0,
+            -0.5, -0.5, -0.5, 0, 1,
+
+            -0.5,  0.5, -0.5, 0, 1,
+             0.5,  0.5, -0.5, 1, 1,
+             0.5,  0.5,  0.5, 1, 0,
+
+             0.5,  0.5,  0.5, 1, 0,
+            -0.5,  0.5,  0.5, 0, 0,
+            -0.5,  0.5, -0.5, 0, 1
         )
 
         self.vertices = np.array(self.vertices, dtype=np.float32)
-        self.n_vertices = 3
+        self.n_vertices = len(self.vertices) // 5
 
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
@@ -76,11 +152,10 @@ class Triangle:
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
         glEnableVertexAttribArray(0)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
-        glEnableVertexAttribArray(2)
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(24))
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
+        
 
     def destroy(self):
         glDeleteVertexArrays(1, (self.vao,))
