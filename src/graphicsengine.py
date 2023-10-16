@@ -3,13 +3,15 @@ import numpy as np
 import pyrr
 import shaderLoaderV3 as sl
 from utils import load_image
+from objLoaderV4 import ObjLoader
 
 
 class GraphicsEngine:
 
     def __init__(self):
         self.cube_mesh = CubeMesh()
-        self.sky_texture = Material("../assets/textures/Teefy.png")
+        self.rayman = Mesh("../assets/models/raymanModel.obj")
+        self.sky_texture = Material("../assets/textures/wood.png")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
 
         glClearColor(0.2, 0.5, 0.5, 1)
@@ -19,7 +21,7 @@ class GraphicsEngine:
         glUseProgram(self.shader.shader)
         glUniform1i(glGetUniformLocation(self.shader.shader, "imageTexture"), 0)
 
-        projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 10, np.float32)
+        projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
 
         self.modelMatrixLocation = glGetUniformLocation(self.shader.shader, "model_matrix")
@@ -49,10 +51,21 @@ class GraphicsEngine:
             glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, model_transforms)
             glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.n_vertices)
         
+
+        glBindVertexArray(self.rayman.vao)
+        for object in scene.objects:
+            model_transforms = pyrr.matrix44.create_identity(np.float32)
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(-self.rayman.center + object.position, dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.rayman.scale, dtype=np.float32))
+            glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, model_transforms)
+            glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
+        
+        
         glFlush()
     
     def quit(self):
         self.cube_mesh.destroy()
+        self.rayman.destroy()
         glDeleteProgram(self.shader.shader)
         self.sky_texture.destroy()
 
@@ -162,6 +175,9 @@ class Mesh:
         self.obj = ObjLoader(fileName)
         self.vertices = self.obj.vertices
         self.n_vertices = self.obj.n_vertices
+        self.dia = self.obj.dia
+        self.scale = 4.0 / self.dia
+        self.center = self.obj.center
 
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
@@ -175,3 +191,11 @@ class Mesh:
 
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+    
+    def destroy(self):
+        glDeleteVertexArrays(1, (self.vao,))
+        glDeleteBuffers(1, (self.vbo,))
+
+class Object:
+    def __init__(self, position):
+        self.position = position

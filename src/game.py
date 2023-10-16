@@ -2,16 +2,12 @@ import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
 import numpy as np
-import shaderLoaderV3 as sl
-import objLoaderV4 as ObjLoader
-import pyrr
-from PIL import Image
 
 from player import Player
-from graphicsengine import GraphicsEngine, CubeMesh, Material, Cube
+from graphicsengine import GraphicsEngine, Cube, Object
 
-SCREEN_WIDTH = 640
-SCREEN_HEIGHT = 480
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 RETURN_ACTION_CONTINUE = 0
 RETURN_ACTION_END = 1
 
@@ -38,10 +34,14 @@ class Scene:
             Cube(
                 position = [4,0,2],
                 eulers = [0,0,0]
+            ),
+            Cube(
+                position=[0,0,-4],
+                eulers=[0,45,0]
             )
         ]
-
-        self.player = Player([0,0,2])
+        self.objects = [Object([4,4,4]), Object([10, 4, 10])]
+        self.player = Player([0,1.5,2])
 
     def update(self, rate):
         
@@ -79,6 +79,8 @@ class App:
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
+        self.speed = 0.1
+        self.sensativity = 2
 
         self.walk_offset_lookup = {
             1: 0,
@@ -137,9 +139,9 @@ class App:
         if combo in self.walk_offset_lookup:
             directionModifier = self.walk_offset_lookup[combo]
             dPos = [
-                self.frameTime / 16.7 * np.cos(np.deg2rad(self.scene.player.theta + directionModifier)),
+                self.speed * self.frameTime / 16.7 * np.cos(np.deg2rad(self.scene.player.theta + directionModifier)),
                 0,
-                -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier))
+                self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier))
             ]
             self.scene.move_player(dPos)
 
@@ -147,8 +149,8 @@ class App:
 
         (x,z) = glfw.get_cursor_pos(self.window)
         rate = self.frameTime / 16.7
-        theta_increment = rate * ((SCREEN_WIDTH/2) - x)
-        phi_increment = rate * ((SCREEN_HEIGHT/2) - z)
+        theta_increment = rate * ((SCREEN_WIDTH/2) - x) * self.sensativity
+        phi_increment = rate * ((SCREEN_HEIGHT/2) - z) * self.sensativity
         self.scene.spin_player(theta_increment, phi_increment)
         glfw.set_cursor_pos(self.window, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     
