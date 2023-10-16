@@ -44,41 +44,66 @@ def main():
         if int(player_x) == exit_x and int(player_y) == exit_y:
             print("You got out of the maze!")
             
-            """ if NUM_ENEMIES < MAP_SIZE:
-                pg.time.wait(1000)
-                running = False
-            elif int(ticks % 10 + 0.9) == 0:
-                print("There is still work to do...") """
-
-        # Exit the game when ESC is pressed
+        # Exit handling
         for event in pg.event.get():
-            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 running = False
         
         # Update the frame buffer
-        frame_buffer = new_frame(player_x, player_y, player_rotation, frame_buffer, sky_texture, 
-                                 floor_texture, maze, wall_texture, exit_x, exit_y)
+        frame_buffer = new_frame(player_x, player_y, player_rotation, frame_buffer, sky_texture, floor_texture, maze, wall_texture, exit_x, exit_y)
         surface = pg.surfarray.make_surface(frame_buffer * 255)
         
-        # Update the enemies and draw sprites
+        # Update enemies and check for collisions
         enemies = update_enemies(player_x, player_y, player_rotation, enemies, maze, elapsed_time/5)
         surface, en = draw_sprites(surface, sprites, enemies, sprite_size, ticks)
 
-        # Scale the surface to match the screen resolution
+        # Collision handling
+        if check_player_enemy_collision(player_x, player_y, enemies):
+            restart = death_screen(screen)
+            if restart:
+                # Reset game state
+                player_x, player_y, player_rotation, maze, exit_x, exit_y = generate_maze()
+                enemies = spawn_enemies(NUM_ENEMIES, maze)
+                continue
+            else:
+                running = False
+                break
         surface = pg.transform.scale(surface, RESOLUTION)
 
-        # Display the surface on the screen
+    # Display the surface on the screen
         screen.blit(surface, (0, 0))
         pg.display.update()
         fps = int(clock.get_fps())
         pg.display.set_caption("Enemies remaining: " + str(NUM_ENEMIES) + " - FPS: " + str(fps))
         player_x, player_y, player_rotation = movement(pg.key.get_pressed(), player_x, player_y, player_rotation, maze, elapsed_time)
-        if check_player_enemy_collision(player_x, player_y, enemies):
-            running = False
-            death_surface = font.render('You died!', True, (255, 0, 0))
-            screen.blit(death_surface, (WIDTH//2 - death_surface.get_width()//2, HEIGHT//2 - death_surface.get_height()//2))
-            pg.display.update()
-            pg.time.wait(2000)
+
+
+
+def death_screen(screen):
+    font = pg.font.Font('PixelifySans-Bold.ttf', 64)
+    message = font.render("You Died!", True, (255, 0, 0))
+    message_rect = message.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+
+    instruction_font = pg.font.Font(None, 32)
+    instruction = instruction_font.render("Press 'R' to Restart or 'Q' to Quit", True, (255, 255, 255))
+    instruction_rect = instruction.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+
+    screen.blit(message, message_rect)
+    screen.blit(instruction, instruction_rect)
+    pg.display.flip()
+
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                return False
+            if event.type == pg.KEYDOWN:
+                if event.key == 114: 
+                    return True
+                elif event.key == 113:
+                    return False
+
+
+
 
 if __name__ == '__main__':
     main()
