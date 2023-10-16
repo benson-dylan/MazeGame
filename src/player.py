@@ -18,7 +18,7 @@ class Player:
             [
                 np.cos(np.deg2rad(self.theta)) * np.cos(np.deg2rad(self.phi)),
                 np.sin(np.deg2rad(self.phi)),
-                np.sin(np.deg2rad(self.theta)) * np.cos(np.deg2rad(self.phi))
+                -np.sin(np.deg2rad(self.theta)) * np.cos(np.deg2rad(self.phi))
             ]
         )
 

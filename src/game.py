@@ -36,7 +36,7 @@ class Scene:
     def __init__(self) -> None:
         self.cubes = [
             Cube(
-                position = [6,0,0],
+                position = [4,0,2],
                 eulers = [0,0,0]
             )
         ]
@@ -139,7 +139,7 @@ class App:
             dPos = [
                 self.frameTime / 16.7 * np.cos(np.deg2rad(self.scene.player.theta + directionModifier)),
                 0,
-                self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier))
+                -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier))
             ]
             self.scene.move_player(dPos)
 
@@ -160,7 +160,9 @@ class App:
             framerate = max(1, int(self.numFrames / delta))
             glfw.set_window_title(self.window, f"Running at {framerate} fps.")
             self.lastTime = self.currentTime
-            self.numFrames = float(1000.0/max(1, framerate))
+            self.numFrames = -1
+            self.frameTime = float(1000.0/max(1, framerate))
+        self.numFrames += 1
 
     def quit(self):
         self.renderer.quit()       
