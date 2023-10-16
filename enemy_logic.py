@@ -58,10 +58,13 @@ def update_enemies(player_x, player_y, player_rotation, enemies, maze, elapsed_t
 def spawn_enemies(num_enemies_to_spawn, maze):
     enemies = []
     while len(enemies) < num_enemies_to_spawn:
+        # Randomly select initial coordinates for an enemy within the maze
         x, y = np.random.uniform(1, MAP_SIZE - 2), np.random.uniform(1, MAP_SIZE - 2)
 
+        # Make sure that the selected position is not blocked by maze walls
         if not any(maze[int(x + dx) % (MAP_SIZE - 1)][int(y + dy) % (MAP_SIZE - 1)] for dx in [-0.1, 0.1] for dy in [-0.1, 0.1]):
-            angle_to_player, inverse_distance_to_player, direction_to_player = 0, 0, 0  # angle, inv dist, direction_to_player relative to player
+            # Initialize enemy attributes
+            angle_to_player, inverse_distance_to_player, direction_to_player = 0, 0, 0
             entype = np.random.choice([0, 1])  # 0 zombie, 1 skeleton
             direction = np.random.uniform(0, 2 * np.pi)  # facing direction
             map_location = np.random.uniform(7, 10)
