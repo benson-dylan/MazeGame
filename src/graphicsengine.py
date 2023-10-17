@@ -24,8 +24,13 @@ class GraphicsEngine:
         projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
 
-        self.modelMatrixLocation = glGetUniformLocation(self.shader.shader, "model_matrix")
-        self.viewMatrixLocation = glGetUniformLocation(self.shader.shader, "view_matrix")
+        # self.modelMatrixLocation = glGetUniformLocation(self.shader.shader, "model_matrix")
+        # self.viewMatrixLocation = glGetUniformLocation(self.shader.shader, "view_matrix")
+        self.lightLocation = {
+            "position": glGetUniformLocation(self.shader.shader, "Light.position"),
+            "color": glGetUniformLocation(self.shader.shader, "Light.color"),
+            "intensity": glGetUniformLocation(self.shader.shader, "Light.intensity")
+        }
 
     def createShader(self, vertexFilepath, fragmentFilepath):
         shader = sl.ShaderProgram(vertexFilepath, fragmentFilepath)
@@ -39,7 +44,12 @@ class GraphicsEngine:
         
 
         view_transforms = pyrr.matrix44.create_look_at(scene.player.position, scene.player.position + scene.player.forwards, scene.player.up, dtype=np.float32)
-        glUniformMatrix4fv(self.viewMatrixLocation, 1, GL_FALSE, view_transforms)
+        self.shader["view_matrix"] = view_transforms
+
+        light = scene.lights[0]
+        self.shader["light_pos"] = light.position
+        glUniform3fv(self.lightLocation["color"], 1, light.color)
+        glUniform1f(self.lightLocation["intensity"], light.intensity)
 
         self.sky_texture.use()
         glBindVertexArray(self.cube_mesh.vao)
@@ -48,16 +58,17 @@ class GraphicsEngine:
             model_transforms = pyrr.matrix44.create_identity(np.float32)
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(cube.eulers), dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(cube.position, dtype=np.float32))
-            glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, model_transforms)
+            self.shader["model_matrix"] = model_transforms
             glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.n_vertices)
         
 
         glBindVertexArray(self.rayman.vao)
         for object in scene.objects:
             model_transforms = pyrr.matrix44.create_identity(np.float32)
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(object.eulers), dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(-self.rayman.center + object.position, dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.rayman.scale, dtype=np.float32))
-            glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, model_transforms)
+            self.shader["model_matrix"] = model_transforms
             glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
         
         
@@ -185,17 +196,29 @@ class Mesh:
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
-
+        #Position
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
-
+        #Texture
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        #Normals
+        glEnableVertexAttribArray(2)
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(24))
     
     def destroy(self):
         glDeleteVertexArrays(1, (self.vao,))
         glDeleteBuffers(1, (self.vbo,))
 
 class Object:
-    def __init__(self, position):
-        self.position = position
+    def __init__(self, position, eulers):
+        self.position = np.array(position, dtype=np.float32)
+        self.eulers = np.array(eulers, dtype=np.float32)
+
+class Light:
+
+    def __init__(self, position, color, intensity):
+        
+        self.position = np.array(position, dtype=np.float32)
+        self.color = np.array(color, dtype=np.float32)
+        self.intensity = intensity

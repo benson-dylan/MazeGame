@@ -4,7 +4,7 @@ from OpenGL.GL import *
 import numpy as np
 
 from player import Player
-from graphicsengine import GraphicsEngine, Cube, Object
+from graphicsengine import GraphicsEngine, Cube, Object, Light
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -40,8 +40,18 @@ class Scene:
                 eulers=[0,45,0]
             )
         ]
-        self.objects = [Object([4,4,4]), Object([10, 4, 10])]
+        self.objects = [
+            Object([4,4,4], [0, 0, 0]), 
+            Object([10, 4, 10], [0, 0, 0]),
+        ]
         self.player = Player([0,1.5,2])
+        self.lights = [
+            Light(
+                position = [4, 0, 2],
+                color = [1, 0, 0],
+                intensity = 10
+            ),
+        ]
 
     def update(self, rate):
         
@@ -49,6 +59,11 @@ class Scene:
             cube.eulers[2] += 0.25 * rate
             if cube.eulers[2] > 360:
                 cube.eulers[2] -= 360
+
+        for object in self.objects:
+            object.eulers[2] += 0.25 * rate
+            if object.eulers[2] > 360:
+                object.eulers[2] -= 360
 
     def move_player(self, dPos):
 
