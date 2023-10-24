@@ -24,13 +24,23 @@ class GraphicsEngine:
         projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
 
-        # self.modelMatrixLocation = glGetUniformLocation(self.shader.shader, "model_matrix")
-        # self.viewMatrixLocation = glGetUniformLocation(self.shader.shader, "view_matrix")
+        self.modelMatrixLocation = glGetUniformLocation(self.shader.shader, "model_matrix")
+        self.viewMatrixLocation = glGetUniformLocation(self.shader.shader, "view_matrix")
         self.lightLocation = {
-            "position": glGetUniformLocation(self.shader.shader, "Light.position"),
-            "color": glGetUniformLocation(self.shader.shader, "Light.color"),
-            "intensity": glGetUniformLocation(self.shader.shader, "Light.intensity")
+            "position":[
+                glGetUniformLocation(self.shader.shader, f"Lights[{i}].position")
+                for i in range(8)
+            ],
+            "color": [
+                glGetUniformLocation(self.shader.shader, f"Lights[{i}].color")
+                for i in range(8)
+            ],
+            "intensity": [
+                glGetUniformLocation(self.shader.shader, f"Lights[{i}].intensity")
+                for i in range(8)
+            ],
         }
+        self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
 
     def createShader(self, vertexFilepath, fragmentFilepath):
         shader = sl.ShaderProgram(vertexFilepath, fragmentFilepath)
@@ -46,10 +56,12 @@ class GraphicsEngine:
         view_transforms = pyrr.matrix44.create_look_at(scene.player.position, scene.player.position + scene.player.forwards, scene.player.up, dtype=np.float32)
         self.shader["view_matrix"] = view_transforms
 
-        light = scene.lights[0]
-        self.shader["light_pos"] = light.position
-        glUniform3fv(self.lightLocation["color"], 1, light.color)
-        glUniform1f(self.lightLocation["intensity"], light.intensity)
+        for i, light in enumerate(scene.lights):
+            glUniform3fv(self.lightLocation["position"][i], 1, light.position)
+            glUniform3fv(self.lightLocation["color"][i], 1, light.color)
+            glUniform1f(self.lightLocation["intensity"][i], light.intensity)
+
+        glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
 
         self.sky_texture.use()
         glBindVertexArray(self.cube_mesh.vao)
@@ -80,7 +92,7 @@ class GraphicsEngine:
         glDeleteProgram(self.shader.shader)
         self.sky_texture.destroy()
 
-class Cube:
+class SimpleComponent:
 
     def __init__(self, position, eulers):
         
@@ -222,3 +234,20 @@ class Light:
         self.position = np.array(position, dtype=np.float32)
         self.color = np.array(color, dtype=np.float32)
         self.intensity = intensity
+
+class BillBoard:
+
+    def __init__(self, w, h):
+        #x, y, z, s, t, n
+        self.vertices = (
+            0, -w/2,  h/2, 0, 0, -1, 0, 0,
+            0, -w/2, -h/2, 0, 1, -1, 0, 0,
+            0,  w/2, -h/2, 1, 1, -1, 0, 0,
+
+            0,  -w/2, h/2, 0, 0, -1, 0, 0,
+            0,  w/2, -h/2, 1, 1, -1, 0, 0,
+            0,  w/2,  h/2, 1, 0, -1, 0, 0,
+        )
+
+    def destroy(self):
+        pass

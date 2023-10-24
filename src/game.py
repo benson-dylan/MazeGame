@@ -4,7 +4,7 @@ from OpenGL.GL import *
 import numpy as np
 
 from player import Player
-from graphicsengine import GraphicsEngine, Cube, Object, Light
+from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -30,27 +30,32 @@ def initialize_glfw():
 class Scene:
 
     def __init__(self) -> None:
-        self.cubes = [
-            Cube(
-                position = [4,0,2],
-                eulers = [0,0,0]
+        self.teefys = [
+            SimpleComponent(
+                position= [2,0,0],
+                eulers= [0,0,0]
             ),
-            Cube(
-                position=[0,0,-4],
-                eulers=[0,45,0]
-            )
         ]
         self.objects = [
-            Object([4,4,4], [0, 0, 0]), 
-            Object([10, 4, 10], [0, 0, 0]),
+            Object([6,0,0], [0, 0, 0]), 
+            Object([10, 0, 10], [0, 0, 0]),
         ]
         self.player = Player([0,1.5,2])
         self.lights = [
             Light(
-                position = [4, 0, 2],
-                color = [1, 0, 0],
-                intensity = 10
-            ),
+                position = [
+                    np.random.uniform(low=3.0, high=9.0),
+                    np.random.uniform(low=2.0, high=2.0),
+                    np.random.uniform(low=2.0, high=4.0)
+                ],
+                color = [
+                    np.random.uniform(low=0.0, high=1.0),
+                    np.random.uniform(low=0.0, high=1.0),
+                    np.random.uniform(low=0.0, high=1.0)
+                ],
+                intensity = 5
+            )
+            for i in range(8)
         ]
 
     def update(self, rate):
@@ -141,6 +146,8 @@ class App:
 
         combo = 0
         directionModifier = 0
+        runBoost = 1
+        crouchWalk = 1
 
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_W) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 1
@@ -150,13 +157,17 @@ class App:
             combo += 4
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_D) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 8
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_SHIFT) == GLFW_CONSTANTS.GLFW_PRESS:
+            runBoost = 1.5
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_CONTROL) == GLFW_CONSTANTS.GLFW_PRESS:
+            crouchWalk = 0.5
 
         if combo in self.walk_offset_lookup:
             directionModifier = self.walk_offset_lookup[combo]
             dPos = [
-                self.speed * self.frameTime / 16.7 * np.cos(np.deg2rad(self.scene.player.theta + directionModifier)),
+                self.speed * self.frameTime / 16.7 * np.cos(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk,
                 0,
-                self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier))
+                self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk
             ]
             self.scene.move_player(dPos)
 
