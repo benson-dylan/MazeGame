@@ -4,6 +4,7 @@ import pyrr
 import shaderLoaderV3 as sl
 from utils import load_image
 from objLoaderV4 import ObjLoader
+import math
 
 
 class GraphicsEngine:
@@ -11,8 +12,12 @@ class GraphicsEngine:
     def __init__(self):
         self.cube_mesh = CubeMesh()
         self.rayman = Mesh("../assets/models/raymanModel.obj")
-        self.sky_texture = Material("../assets/textures/wood.png")
+        self.wood_texture = Material("../assets/textures/wood.png")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
+
+        self.teefy_texture = Material("../assets/textures/teefy.png")
+        self.teefy_billboard = BillBoard(w=0.5, h=0.5)
+
 
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
@@ -63,34 +68,55 @@ class GraphicsEngine:
 
         glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
 
-        self.sky_texture.use()
+        self.wood_texture.use()
         glBindVertexArray(self.cube_mesh.vao)
 
+        '''
         for cube in scene.cubes:
             model_transforms = pyrr.matrix44.create_identity(np.float32)
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(cube.eulers), dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(cube.position, dtype=np.float32))
             self.shader["model_matrix"] = model_transforms
             glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.n_vertices)
-        
+        '''
 
-        glBindVertexArray(self.rayman.vao)
+        
         for object in scene.objects:
             model_transforms = pyrr.matrix44.create_identity(np.float32)
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(object.eulers), dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(-self.rayman.center + object.position, dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.rayman.scale, dtype=np.float32))
             self.shader["model_matrix"] = model_transforms
+            glBindVertexArray(self.rayman.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
         
         
+        for teefy in scene.teefys:
+
+            self.teefy_texture.use()
+            directionFromPlayer = teefy.position - scene.player.position
+            angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
+            dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
+            angle2 = np.arctan2(directionFromPlayer[1], dist2d)
+
+            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy.position, dtype=np.float32))
+
+            self.shader["model_matrix"] = model_transform
+            glBindVertexArray(self.teefy_billboard.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
+
         glFlush()
     
     def quit(self):
         self.cube_mesh.destroy()
         self.rayman.destroy()
+        self.teefy_billboard.destroy()
+        self.teefy_texture.destroy()
         glDeleteProgram(self.shader.shader)
-        self.sky_texture.destroy()
+        self.wood_texture.destroy()
 
 class SimpleComponent:
 
@@ -216,7 +242,7 @@ class Mesh:
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
         #Normals
         glEnableVertexAttribArray(2)
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(24))
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
     
     def destroy(self):
         glDeleteVertexArrays(1, (self.vao,))
@@ -240,14 +266,34 @@ class BillBoard:
     def __init__(self, w, h):
         #x, y, z, s, t, n
         self.vertices = (
-            0, -w/2,  h/2, 0, 0, -1, 0, 0,
-            0, -w/2, -h/2, 0, 1, -1, 0, 0,
-            0,  w/2, -h/2, 1, 1, -1, 0, 0,
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, -w/2, 0, 1, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
 
-            0,  -w/2, h/2, 0, 0, -1, 0, 0,
-            0,  w/2, -h/2, 1, 1, -1, 0, 0,
-            0,  w/2,  h/2, 1, 0, -1, 0, 0,
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
+            0, h/2, w/2, 1, 0, -1, 0, 0,
         )
 
+        self.vertices = np.array(self.vertices, dtype=np.float32)
+        self.n_vertices = len(self.vertices) // 8
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+        #Position
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        #Texture
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        #Normals
+        glEnableVertexAttribArray(2)
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+
     def destroy(self):
-        pass
+        glDeleteVertexArrays(1, (self.vao,))
+        glDeleteBuffers(1, (self.vbo,))

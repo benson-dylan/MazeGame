@@ -60,11 +60,6 @@ class Scene:
 
     def update(self, rate):
         
-        for cube in self.cubes:
-            cube.eulers[2] += 0.25 * rate
-            if cube.eulers[2] > 360:
-                cube.eulers[2] -= 360
-
         for object in self.objects:
             object.eulers[2] += 0.25 * rate
             if object.eulers[2] > 360:
