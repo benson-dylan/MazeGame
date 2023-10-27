@@ -6,18 +6,22 @@ from utils import load_image
 from objLoaderV4 import ObjLoader
 import math
 
-
 class GraphicsEngine:
 
     def __init__(self):
         self.cube_mesh = CubeMesh()
         self.rayman = Mesh("../assets/models/raymanModel.obj")
+        self.square = Mesh("../assets/models/square.obj")
         self.wood_texture = Material("../assets/textures/wood.png")
+        self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
+        self.carpet_texture = Material("../assets/textures/dirtycarpet.jpg")
 
         self.teefy_texture = Material("../assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
-
+        
+        self.light_texture = Material("../assets/textures/lightbulb.png")
+        self.light_billboard = BillBoard(w=0.2, h=0.2)
 
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
@@ -46,6 +50,7 @@ class GraphicsEngine:
             ],
         }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
+        self.tintLoc = glGetUniformLocation(self.shader.shader, "tint")
 
     def createShader(self, vertexFilepath, fragmentFilepath):
         shader = sl.ShaderProgram(vertexFilepath, fragmentFilepath)
@@ -68,8 +73,8 @@ class GraphicsEngine:
 
         glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
 
-        self.wood_texture.use()
-        glBindVertexArray(self.cube_mesh.vao)
+        self.rayman_texture.use()
+        #glBindVertexArray(self.cube_mesh.vao)
 
         '''
         for cube in scene.cubes:
@@ -90,10 +95,42 @@ class GraphicsEngine:
             glBindVertexArray(self.rayman.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
         
+        self.carpet_texture.use()
+
+        for floor in scene.floors:
+            model_transforms = pyrr.matrix44.create_identity(np.float32)
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_x_rotation(np.deg2rad(90), dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation([0, 0, 0] + floor.position, dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * 10, dtype=np.float32))
+            self.shader["model_matrix"] = model_transforms
+            glBindVertexArray(self.square.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
         
+        for light in scene.lights:
+
+            self.light_texture.use()
+            glUniform3fv(self.tintLoc, 1, light.color)
+
+            directionFromPlayer = light.position - scene.player.position
+            angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
+            dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
+            angle2 = np.arctan2(directionFromPlayer[1], dist2d)
+
+            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(light.position, dtype=np.float32))
+
+            self.shader["model_matrix"] = model_transform
+            glBindVertexArray(self.light_billboard.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.light_billboard.n_vertices)
+
+        glUniform3fv(self.tintLoc, 1, np.array([1, 1, 1], dtype=np.float32))
+
         for teefy in scene.teefys:
 
             self.teefy_texture.use()
+
             directionFromPlayer = teefy.position - scene.player.position
             angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
             dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
@@ -113,8 +150,11 @@ class GraphicsEngine:
     def quit(self):
         self.cube_mesh.destroy()
         self.rayman.destroy()
+        self.square.destroy
         self.teefy_billboard.destroy()
         self.teefy_texture.destroy()
+        self.light_billboard.destroy()
+        self.light_texture.destroy()
         glDeleteProgram(self.shader.shader)
         self.wood_texture.destroy()
 
@@ -200,15 +240,16 @@ class CubeMesh:
 
 class Material:
 
-    def __init__(self, filepath):
-        
+    def __init__(self, filepath, model=""):
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        img_data, img_width, img_height = load_image(filepath)
+    
+        img_data, img_width, img_height = load_image(filepath, "RGBA", False)
+
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img_width, img_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
         glGenerateMipmap(GL_TEXTURE_2D)
 

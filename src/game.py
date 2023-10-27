@@ -32,24 +32,34 @@ class Scene:
     def __init__(self) -> None:
         self.teefys = [
             SimpleComponent(
-                position= [2,0,0],
+                position= [2,2,0],
+                eulers= [0,0,0]
+            ),
+            SimpleComponent(
+                position= [5,2,2],
                 eulers= [0,0,0]
             ),
         ]
-        self.objects = [
-            Object([6,0,0], [0, 0, 0]), 
-            Object([10, 0, 10], [0, 0, 0]),
+        self.floors = [
+            SimpleComponent(
+                position=[0,0,0],
+                eulers=[0,0,0]
+            )
         ]
-        self.player = Player([0,1.5,2])
+        self.objects = [
+            Object([6,6.5,0], [0, 0, 0]), 
+            Object([10, 6.5, 10], [0, 0, 0]),
+        ]
+        self.player = Player([0,2,2])
         self.lights = [
             Light(
                 position = [
-                    np.random.uniform(low=3.0, high=9.0),
-                    np.random.uniform(low=2.0, high=2.0),
-                    np.random.uniform(low=2.0, high=4.0)
+                    np.random.uniform(low=0.0, high=5.0),
+                    np.random.uniform(low=3.0, high=5.0),
+                    np.random.uniform(low=0.0, high=5.0)
                 ],
                 color = [
-                    np.random.uniform(low=0.0, high=1.0),
+                    np.random.uniform(low=0.0, high=0.9),
                     np.random.uniform(low=0.0, high=1.0),
                     np.random.uniform(low=0.0, high=1.0)
                 ],
@@ -65,6 +75,14 @@ class Scene:
             if object.eulers[2] > 360:
                 object.eulers[2] -= 360
 
+        '''  # OBJECT COLLISION #
+        for teefy in self.teefys:
+            vector = self.player.position - teefy.position
+            distance = np.sqrt(vector[0] ** 2 + vector[2] ** 2)
+            print(distance)
+            if distance < 1:
+                teefy.position[1] += 100
+        '''
     def move_player(self, dPos):
 
         dPos = np.array(dPos, dtype=np.float32)
