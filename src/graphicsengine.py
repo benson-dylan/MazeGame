@@ -15,6 +15,7 @@ class GraphicsEngine:
         self.wood_texture = Material("../assets/textures/wood.png")
         self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
+        self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
         self.carpet_texture = Material("../assets/textures/dirtycarpet.jpg")
 
         self.teefy_texture = Material("../assets/textures/teefy.png")
@@ -26,6 +27,8 @@ class GraphicsEngine:
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
+        glEnable(GL_CULL_FACE)
+        glCullFace(GL_BACK)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glUseProgram(self.shader.shader)
         glUniform1i(glGetUniformLocation(self.shader.shader, "imageTexture"), 0)
@@ -33,8 +36,6 @@ class GraphicsEngine:
         projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
 
-        self.modelMatrixLocation = glGetUniformLocation(self.shader.shader, "model_matrix")
-        self.viewMatrixLocation = glGetUniformLocation(self.shader.shader, "view_matrix")
         self.lightLocation = {
             "position":[
                 glGetUniformLocation(self.shader.shader, f"Lights[{i}].position")
@@ -50,7 +51,10 @@ class GraphicsEngine:
             ],
         }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
-        self.tintLoc = glGetUniformLocation(self.shader.shader, "tint")
+
+        glUseProgram(self.light_shader.shader)
+        glUniformMatrix4fv(glGetUniformLocation(self.light_shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
+        self.tintLoc = glGetUniformLocation(self.light_shader.shader, "tint")
 
     def createShader(self, vertexFilepath, fragmentFilepath):
         shader = sl.ShaderProgram(vertexFilepath, fragmentFilepath)
@@ -61,11 +65,10 @@ class GraphicsEngine:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         glUseProgram(self.shader.shader)
-        
-
+    
         view_transforms = pyrr.matrix44.create_look_at(scene.player.position, scene.player.position + scene.player.forwards, scene.player.up, dtype=np.float32)
         self.shader["view_matrix"] = view_transforms
-
+    
         for i, light in enumerate(scene.lights):
             glUniform3fv(self.lightLocation["position"][i], 1, light.position)
             glUniform3fv(self.lightLocation["color"][i], 1, light.color)
@@ -106,8 +109,12 @@ class GraphicsEngine:
             glBindVertexArray(self.square.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
         
-        for light in scene.lights:
+        glUseProgram(self.light_shader.shader)
 
+        self.light_shader["view_matrix"] = view_transforms
+
+        for light in scene.lights:
+            
             self.light_texture.use()
             glUniform3fv(self.tintLoc, 1, light.color)
 
@@ -121,11 +128,13 @@ class GraphicsEngine:
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(light.position, dtype=np.float32))
 
-            self.shader["model_matrix"] = model_transform
+            self.light_shader["model_matrix"] = model_transform
             glBindVertexArray(self.light_billboard.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.light_billboard.n_vertices)
 
         glUniform3fv(self.tintLoc, 1, np.array([1, 1, 1], dtype=np.float32))
+
+        glUseProgram(self.shader.shader)
 
         for teefy in scene.teefys:
 
