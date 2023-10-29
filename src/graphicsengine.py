@@ -10,18 +10,18 @@ class GraphicsEngine:
 
     def __init__(self):
         self.cube_mesh = CubeMesh()
-        self.rayman = Mesh("../assets/models/raymanModel.obj")
-        self.square = Mesh("../assets/models/square.obj")
-        self.wood_texture = Material("../assets/textures/wood.png")
-        self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
-        self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
-        self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
-        self.carpet_texture = Material("../assets/textures/dirtycarpet.jpg")
+        self.rayman = Mesh("assets/models/raymanModel.obj")
+        self.square = Mesh("assets/models/square.obj")
+        self.wood_texture = Material("assets/textures/wood.png")
+        self.rayman_texture = Material("assets/textures/raymanModel.png", "rayman")
+        self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
+        self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
+        self.carpet_texture = Material("assets/textures/dirtycarpet.jpg")
 
-        self.teefy_texture = Material("../assets/textures/teefy.png")
+        self.teefy_texture = Material("assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
         
-        self.light_texture = Material("../assets/textures/lightbulb.png")
+        self.light_texture = Material("assets/textures/lightbulb.png")
         self.light_billboard = BillBoard(w=0.2, h=0.2)
 
         glClearColor(0.2, 0.5, 0.5, 1)
@@ -293,15 +293,26 @@ class Mesh:
         #Normals
         glEnableVertexAttribArray(2)
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+
+    def calculate_bounding_sphere_radius(self):
+        max_distance_squared = 0
+        for i in range(0, len(self.vertices), 8):
+            x, y, z = self.vertices[i:i+3]
+            distance_squared = x**2 + y**2 + z**2
+            if distance_squared > max_distance_squared:
+                max_distance_squared = distance_squared
+        return np.sqrt(max_distance_squared)
     
     def destroy(self):
         glDeleteVertexArrays(1, (self.vao,))
         glDeleteBuffers(1, (self.vbo,))
 
 class Object:
-    def __init__(self, position, eulers):
+    def __init__(self, position, eulers, mesh):
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
+        self.mesh = mesh
+        self.radius = mesh.calculate_bounding_sphere_radius() * mesh.scale
 
 class Light:
 

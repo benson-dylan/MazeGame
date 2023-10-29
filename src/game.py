@@ -29,7 +29,7 @@ def initialize_glfw():
 
 class Scene:
 
-    def __init__(self) -> None:
+    def __init__(self, meshes) -> None:
         self.teefys = [
             SimpleComponent(
                 position= [2,2,0],
@@ -47,8 +47,7 @@ class Scene:
             )
         ]
         self.objects = [
-            Object([6,6.5,0], [0, 0, 0]), 
-            Object([10, 6.5, 10], [0, 0, 0]),
+            Object([6, 6.5, 0], [0, 0, 0], meshes['rayman'])
         ]
         self.player = Player([0,2,2])
         self.lights = [
@@ -67,6 +66,7 @@ class Scene:
             )
             for i in range(8)
         ]
+        self.collision_count = 0
 
     def update(self, rate):
         
@@ -100,13 +100,23 @@ class Scene:
 
         self.player.update_vectors()
 
+    def check_collisions(self):
+        for object in self.objects:
+            dist = np.linalg.norm(self.player.position - object.position)
+            if dist < self.player.radius + object.radius:
+                self.collision_count += 1
+                print(f"Collision detected with object! Total collisions: {self.collision_count}")
+
 class App:
 
     def __init__(self, window):
         
         self.window = window
         self.renderer = GraphicsEngine()
-        self.scene = Scene()
+        meshes = {
+            'rayman': self.renderer.rayman,
+        }
+        self.scene = Scene(meshes)
 
         self.lastTime = glfw.get_time()
         self.currentTime = 0
@@ -145,6 +155,7 @@ class App:
 
             self.handleKeys()
             self.handleMouse()
+            self.scene.check_collisions()
 
             glfw.poll_events()
 

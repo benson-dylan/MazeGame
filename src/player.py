@@ -11,6 +11,7 @@ class Player:
         self.theta = 0
         self.phi = 0
         self.update_vectors()
+        self.radius = 4
 
     def update_vectors(self):
 
