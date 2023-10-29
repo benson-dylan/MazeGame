@@ -6,6 +6,7 @@ from utils import load_image
 from objLoaderV4 import ObjLoader
 import math
 
+
 class GraphicsEngine:
 
     def __init__(self):
@@ -23,6 +24,7 @@ class GraphicsEngine:
         
         self.light_texture = Material("../assets/textures/lightbulb.png")
         self.light_billboard = BillBoard(w=0.2, h=0.2)
+
 
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
