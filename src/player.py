@@ -12,6 +12,7 @@ class Player:
         self.phi = 0
         self.update_vectors()
 
+
     def update_vectors(self):
 
         self.forwards = np.array(
