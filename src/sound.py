@@ -12,9 +12,9 @@ class Sound:
         self.player_move = self.load('footstep.wav')
 
         pg.mixer.music.load(self.path + 'ambient.mp3')
-        pg.mixer.music.set_volume(0.1)
+        pg.mixer.music.set_volume(0.4)
 
-    def load(self, file_name, volume=0.4):
+    def load(self, file_name, volume=0.3):
         sound = pg.mixer.Sound(self.path + file_name)
         sound.set_volume(volume)
         return sound

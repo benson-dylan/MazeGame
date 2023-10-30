@@ -1,3 +1,4 @@
+import time
 import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
@@ -126,6 +127,7 @@ class Scene:
         pg.mixer.music.play(-1)
 
         self.play = self.sound.play
+        self.last_footstep_time = 0
 
     def update(self, rate):
         
@@ -147,9 +149,18 @@ class Scene:
         dPos = np.array(dPos, dtype=np.float32)
         self.player.position += dPos
 
-        # Footsteps
-        #self.play(self.sound.player_move)
-    
+        # Delay between footstep sounds (in seconds)
+        footstep_delay = 0.5  # Adjust this to your desired delay
+
+        # Get the current time
+        current_time = time.time()
+
+        # Check if enough time has passed since the last footstep sound
+        if current_time - self.last_footstep_time >= footstep_delay:
+            self.play(self.sound.player_move)
+
+            # Update the last footstep time
+            self.last_footstep_time = current_time
     def spin_player(self, dTheta, dPhi):
 
         self.player.theta += dTheta
