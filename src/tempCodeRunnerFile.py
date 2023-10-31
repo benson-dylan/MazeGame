@@ -1,4 +1,3 @@
-import time
 import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
@@ -6,9 +5,6 @@ import numpy as np
 
 from player import Player
 from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
-
-from sound import Sound
-import pygame as pg
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -51,7 +47,8 @@ class Scene:
             )
         ]
         self.objects = [
-            Object([6, 6.5, 0], [0, 0, 0], meshes['rayman'])
+            Object([6, 6.5, 0], [0, 0, 0], meshes['rayman']),
+            Object([9, 6.5, 0], [0, 0, 0], meshes['key'])
         ]
         self.player = Player([0,2,2])
         self.lights = [
@@ -72,12 +69,6 @@ class Scene:
         ]
         self.collision_count = 0
 
-        self.sound = Sound()
-        pg.mixer.music.play(-1)
-
-        self.play = self.sound.play
-        self.last_footstep_time = 0
-
     def update(self, rate):
         
         for object in self.objects:
@@ -94,22 +85,10 @@ class Scene:
                 teefy.position[1] += 100
         '''
     def move_player(self, dPos):
-        
+
         dPos = np.array(dPos, dtype=np.float32)
         self.player.position += dPos
-
-        # Delay between footstep sounds (in seconds)
-        footstep_delay = 0.5  # Adjust this to your desired delay
-
-        # Get the current time
-        current_time = time.time()
-
-        # Check if enough time has passed since the last footstep sound
-        if current_time - self.last_footstep_time >= footstep_delay:
-            self.play(self.sound.player_move)
-
-            # Update the last footstep time
-            self.last_footstep_time = current_time
+    
     def spin_player(self, dTheta, dPhi):
 
         self.player.theta += dTheta
@@ -137,6 +116,7 @@ class App:
         self.renderer = GraphicsEngine()
         meshes = {
             'rayman': self.renderer.rayman,
+            'key':self.renderer.key
         }
         self.scene = Scene(meshes)
 
@@ -162,8 +142,6 @@ class App:
             14: 180
         }
 
-        
-        
         self.mainLoop()
 
 
@@ -205,13 +183,10 @@ class App:
             combo += 4
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_D) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 8
-        
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_SHIFT) == GLFW_CONSTANTS.GLFW_PRESS:
             runBoost = 1.5
-        elif glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_CONTROL) == GLFW_CONSTANTS.GLFW_PRESS:
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_CONTROL) == GLFW_CONSTANTS.GLFW_PRESS:
             crouchWalk = 0.5
-
-        
 
         if combo in self.walk_offset_lookup:
             directionModifier = self.walk_offset_lookup[combo]
@@ -221,9 +196,6 @@ class App:
                 self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk
             ]
             self.scene.move_player(dPos)
-            
-        
-        
 
     def handleMouse(self):
 
