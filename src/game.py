@@ -10,6 +10,8 @@ from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
 from sound import Sound
 import pygame as pg
 
+from mazeGenerator import MazeGenerator
+
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 RETURN_ACTION_CONTINUE = 0
@@ -34,6 +36,14 @@ def initialize_glfw():
 class Scene:
 
     def __init__(self) -> None:
+        self.maze_size = 10
+
+        self.mazeGenerator = MazeGenerator(self.maze_size)
+        self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
+        print(self.maze)
+        print("Player Location", self.player_x, self.player_y)
+        print("Exit Location", self.exit_x, self.exit_y)
+
         self.teefys = [
             SimpleComponent(
                 position= [2,2,0],
@@ -44,62 +54,87 @@ class Scene:
                 eulers= [0,0,0]
             ),
         ]
-        self.floors = [
-            SimpleComponent(
-                position=[5,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[15,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[5,0,15],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[15,0,15],
-                eulers=[0,0,0]
-            ),
-        ]
-        self.walls = [
-            SimpleComponent(
-                position=[0,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[10,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[10,0,15],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[-5,0,5],
-                eulers=[90,0,0]
-            ),
-        ]
-        self.ceilings = [
-            SimpleComponent(
-                position=[5,5,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[5,5,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[15,5,15],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[5,5,15],
-                eulers=[0,0,0]
-            ),
-        ]
+
+        '''
+        Generate the floors
+        '''
+        # Define the dimensions of the maze
+        maze_height = len(self.maze)
+        maze_width = len(self.maze[0])
+
+        # Generate floors for the maze
+        self.floors = []
+
+        for row in range(maze_height):
+            for col in range(maze_width):
+                # Multiply the x and y positions by 5 to create the floor
+                x_position = col * 5
+                z_position = row * 5
+
+                self.floors.append(
+                    SimpleComponent(
+                        position=[x_position, 0, z_position],
+                        eulers= [0, 0, 0]
+                    )
+                )
+                    
+
+        """
+        This will be used for inside walls
+        """
+        self.walls = []
+        
+        """
+        This will be used to generate the edge walls of the maze
+        """
+        self.wall_edges = []
+        row_indices, col_indices = np.where(self.maze == 1)
+        
+        # Find the unique row and column indices of edge elements
+        unique_row_indices = np.unique(row_indices)
+        unique_col_indices = np.unique(col_indices)
+
+        # Iterate through unique row and column indices and check if they are on the outer edge
+        for row in unique_row_indices:
+            for col in unique_col_indices:
+                if (
+                    row == unique_row_indices[0] or row == unique_row_indices[-1] or
+                    col == unique_col_indices[0] or col == unique_col_indices[-1]
+                ):
+                    # Set the initial eulers value
+                    eulers = [90, 0, 0]
+                    
+                    # Check if row is 0 and adjust eulers
+                    if row == unique_row_indices[0] or row == unique_row_indices[-1]:
+                        eulers = [0, 0, 0]
+
+                    self.wall_edges.append(
+                        SimpleComponent(
+                            position=[row * 5, 2.5 , col * 5],
+                            eulers=eulers
+                        )
+                    )
+        '''
+        Generate the ceilings
+        '''
+        self.ceilings = []
+        for row in range(maze_height):
+            for col in range(maze_width):
+                # Multiply the x and y positions by 5 to create the floor
+                x_position = col * 5
+                z_position = row * 5
+
+                self.ceilings.append(
+                    SimpleComponent(
+                        position=[x_position, 5, z_position],
+                        eulers= [0, 0, 0]
+                    )
+                )
+
+        
         self.objects = []
-        self.player = Player([5,2,5])
+        self.player = Player([self.player_y, 2 , self.player_x])
+        
         self.lights = [
             Light(
                 position = [5,4,5],
@@ -123,10 +158,12 @@ class Scene:
             ),
         ]
 
+        # Play the ambient sound
         self.sound = Sound()
         pg.mixer.music.play(-1)
 
         self.play = self.sound.play
+        # Initialize footstep time
         self.last_footstep_time = 0
 
     def update(self, rate):
@@ -136,14 +173,14 @@ class Scene:
             if object.eulers[2] > 360:
                 object.eulers[2] -= 360
 
-        '''  # OBJECT COLLISION #
-        for teefy in self.teefys:
+        # OBJECT COLLISION #
+        """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
             distance = np.sqrt(vector[0] ** 2 + vector[2] ** 2)
             print(distance)
             if distance < 1:
-                teefy.position[1] += 100
-        '''
+                teefy.position[1] += 100 """
+        
     def move_player(self, dPos):
         
         dPos = np.array(dPos, dtype=np.float32)
