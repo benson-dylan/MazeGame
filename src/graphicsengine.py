@@ -13,11 +13,11 @@ class GraphicsEngine:
         self.cube_mesh = CubeMesh()
         self.rayman = Mesh("../assets/models/raymanModel.obj")
         self.square = Mesh("../assets/models/square.obj")
-        self.wood_texture = Material("../assets/textures/wood.png")
+        self.wood_texture = Material("../assets/textures/floor.png")
         self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
         self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
-        self.carpet_texture = Material("../assets/textures/dirtycarpet.jpg")
+        self.carpet_texture = Material("../assets/textures/dirtycarpet.png")
 
         self.teefy_texture = Material("../assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
@@ -166,8 +166,9 @@ class GraphicsEngine:
         self.teefy_texture.destroy()
         self.light_billboard.destroy()
         self.light_texture.destroy()
-        glDeleteProgram(self.shader.shader)
         self.wood_texture.destroy()
+        glDeleteProgram(self.shader.shader)
+       
 
 class SimpleComponent:
 

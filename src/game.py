@@ -10,6 +10,8 @@ from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
 from sound import Sound
 import pygame as pg
 
+from mazeGenerator import MazeGenerator
+
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 RETURN_ACTION_CONTINUE = 0
@@ -34,6 +36,12 @@ def initialize_glfw():
 class Scene:
 
     def __init__(self) -> None:
+        self.mazeGenerator = MazeGenerator(10)
+        self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
+        print(self.maze)
+        print("Player Location", self.player_x, self.player_y)
+        print("Exit Location", self.exit_x, self.exit_y)
+
         self.teefys = [
             SimpleComponent(
                 position= [2,2,0],
@@ -44,17 +52,25 @@ class Scene:
                 eulers= [0,0,0]
             ),
         ]
-        self.floors = [
-            SimpleComponent(
-                position=[0,0,0],
-                eulers=[0,0,0]
-            )
-        ]
+        self.floors = []
+
+        grid_size = 10  # Number of rows and columns
+
+        for x in range(grid_size):
+            for z in range(grid_size):
+                position = [x, 0, z]
+                self.floors.append(
+                    SimpleComponent(
+                        position=position,
+                        eulers=[0, 0, 0]
+                    )
+                )
+
         self.objects = [
             Object([6,6.5,0], [0, 0, 0]), 
             Object([10, 6.5, 10], [0, 0, 0]),
         ]
-        self.player = Player([0,2,2])
+        self.player = Player([self.player_y * 10, 2 , self.player_x * 10])
         self.lights = [
             Light(
                 position = [
@@ -72,10 +88,12 @@ class Scene:
             for i in range(8)
         ]
 
+        # Play the ambient sound
         self.sound = Sound()
         pg.mixer.music.play(-1)
 
         self.play = self.sound.play
+        # Initialize footstep time
         self.last_footstep_time = 0
 
     def update(self, rate):
@@ -85,14 +103,14 @@ class Scene:
             if object.eulers[2] > 360:
                 object.eulers[2] -= 360
 
-        '''  # OBJECT COLLISION #
-        for teefy in self.teefys:
+        # OBJECT COLLISION #
+        """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
             distance = np.sqrt(vector[0] ** 2 + vector[2] ** 2)
             print(distance)
             if distance < 1:
-                teefy.position[1] += 100
-        '''
+                teefy.position[1] += 100 """
+        
     def move_player(self, dPos):
         
         dPos = np.array(dPos, dtype=np.float32)
