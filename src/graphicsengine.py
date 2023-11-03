@@ -115,30 +115,6 @@ class GraphicsEngine:
             self.shader["model_matrix"] = model_transforms
             glBindVertexArray(self.floor.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
-
-        for wall in scene.walls:
-
-            self.wall_texture.use()
-
-            model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_x_rotation(np.deg2rad(180 - wall.eulers[0]), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(wall.position, dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
-            self.shader["model_matrix"] = model_transforms
-            glBindVertexArray(self.wall.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
-
-        for ceiling in scene.ceilings:
-
-            self.ceiling_texture.use()
-
-            model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_z_rotation(np.deg2rad(270), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(ceiling.position, dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
-            self.shader["model_matrix"] = model_transforms
-            glBindVertexArray(self.ceiling.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
         
         glUseProgram(self.light_shader.shader)
 
