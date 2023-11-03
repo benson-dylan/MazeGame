@@ -33,8 +33,8 @@ class GraphicsEngine:
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
-        #glEnable(GL_CULL_FACE)
-        #glCullFace(GL_BACK)
+        glEnable(GL_CULL_FACE)
+        glCullFace(GL_BACK)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glUseProgram(self.shader.shader)
         glUniform1i(glGetUniformLocation(self.shader.shader, "imageTexture"), 0)
@@ -139,25 +139,7 @@ class GraphicsEngine:
             self.shader["model_matrix"] = model_transforms
             glBindVertexArray(self.ceiling.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
-
-        for teefy in scene.teefys:
-
-            self.teefy_texture.use()
-
-            directionFromPlayer = teefy.position - scene.player.position
-            angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
-            dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
-            angle2 = np.arctan2(directionFromPlayer[1], dist2d)
-
-            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy.position, dtype=np.float32))
-
-            self.shader["model_matrix"] = model_transform
-            glBindVertexArray(self.teefy_billboard.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
-
+        
         glUseProgram(self.light_shader.shader)
 
         self.light_shader["view_matrix"] = view_transforms
@@ -182,6 +164,26 @@ class GraphicsEngine:
             glDrawArrays(GL_TRIANGLES, 0, self.light_billboard.n_vertices)
 
         glUniform3fv(self.tintLoc, 1, np.array([1, 1, 1], dtype=np.float32))
+
+        glUseProgram(self.shader.shader)
+
+        for teefy in scene.teefys:
+
+            self.teefy_texture.use()
+
+            directionFromPlayer = teefy.position - scene.player.position
+            angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
+            dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
+            angle2 = np.arctan2(directionFromPlayer[1], dist2d)
+
+            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy.position, dtype=np.float32))
+
+            self.shader["model_matrix"] = model_transform
+            glBindVertexArray(self.teefy_billboard.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
 
         glFlush()
     
