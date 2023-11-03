@@ -12,11 +12,17 @@ class GraphicsEngine:
         self.cube_mesh = CubeMesh()
         self.rayman = Mesh("../assets/models/raymanModel.obj")
         self.square = Mesh("../assets/models/square.obj")
+        self.floor = Floor(w=10.0, h=10.0)
+        self.wall = Wall(w=10.0, h=10.0)
+        self.ceiling = Ceiling(w=10.0, h=10.0)
         self.wood_texture = Material("../assets/textures/wood.png")
         self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
         self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
         self.carpet_texture = Material("../assets/textures/dirtycarpet.jpg")
+
+        self.wall_texture = Material("../assets/textures/yellowwallpaper.jpg")
+        self.ceiling_texture = Material("../assets/textures/ceiling-tile.jpg")
 
         self.teefy_texture = Material("../assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
@@ -39,15 +45,15 @@ class GraphicsEngine:
         self.lightLocation = {
             "position":[
                 glGetUniformLocation(self.shader.shader, f"Lights[{i}].position")
-                for i in range(8)
+                for i in range(4)
             ],
             "color": [
                 glGetUniformLocation(self.shader.shader, f"Lights[{i}].color")
-                for i in range(8)
+                for i in range(4)
             ],
             "intensity": [
                 glGetUniformLocation(self.shader.shader, f"Lights[{i}].intensity")
-                for i in range(8)
+                for i in range(4)
             ],
         }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
@@ -97,16 +103,41 @@ class GraphicsEngine:
             self.shader["model_matrix"] = model_transforms
             glBindVertexArray(self.rayman.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
-        
-        self.carpet_texture.use()
 
         for floor in scene.floors:
+
+            self.carpet_texture.use()
+
             model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_x_rotation(np.deg2rad(90), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation([0, 0, 0] + floor.position, dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * 10, dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_z_rotation(np.deg2rad(90), dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(floor.position, dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
             self.shader["model_matrix"] = model_transforms
-            glBindVertexArray(self.square.vao)
+            glBindVertexArray(self.floor.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
+
+        for wall in scene.walls:
+
+            self.wall_texture.use()
+
+            model_transforms = pyrr.matrix44.create_identity(np.float32)
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_x_rotation(np.deg2rad(180 - wall.eulers[0]), dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(wall.position, dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
+            self.shader["model_matrix"] = model_transforms
+            glBindVertexArray(self.wall.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
+
+        for ceiling in scene.ceilings:
+
+            self.ceiling_texture.use()
+
+            model_transforms = pyrr.matrix44.create_identity(np.float32)
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_z_rotation(np.deg2rad(270), dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(ceiling.position, dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
+            self.shader["model_matrix"] = model_transforms
+            glBindVertexArray(self.ceiling.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
 
         for teefy in scene.teefys:
@@ -167,7 +198,7 @@ class GraphicsEngine:
 
 class SimpleComponent:
 
-    def __init__(self, position, eulers):
+    def __init__(self, position, eulers, h, w):
         
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
@@ -345,3 +376,119 @@ class BillBoard:
     def destroy(self):
         glDeleteVertexArrays(1, (self.vao,))
         glDeleteBuffers(1, (self.vbo,))
+
+class Floor:
+
+    def __init__(self, w, h):
+        #x, y, z, s, t, n
+        self.vertices = (
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, -w/2, 0, 1, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
+
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
+            0, h/2, w/2, 1, 0, -1, 0, 0,
+        )
+
+        self.vertices = np.array(self.vertices, dtype=np.float32)
+        self.n_vertices = len(self.vertices) // 8
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+        #Position
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        #Texture
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        #Normals
+        glEnableVertexAttribArray(2)
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+
+    def destroy(self):
+        glDeleteVertexArrays(1, (self.vao,))
+        glDeleteBuffers(1, (self.vbo,))
+
+class Wall:
+
+    def __init__(self, w, h):
+        #x, y, z, s, t, n
+        self.vertices = (
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, -w/2, 0, 1, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
+
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
+            0, h/2, w/2, 1, 0, -1, 0, 0,
+        )
+
+        self.vertices = np.array(self.vertices, dtype=np.float32)
+        self.n_vertices = len(self.vertices) // 8
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+        #Position
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        #Texture
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        #Normals
+        glEnableVertexAttribArray(2)
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+
+    def destroy(self):
+        glDeleteVertexArrays(1, (self.vao,))
+        glDeleteBuffers(1, (self.vbo,))
+
+class Ceiling:
+
+    def __init__(self, w, h):
+        #x, y, z, s, t, n
+        self.vertices = (
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, -w/2, 0, 1, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
+
+            0, h/2, -w/2, 0, 0, -1, 0, 0,
+            0, -h/2, w/2, 1, 1, -1, 0, 0,
+            0, h/2, w/2, 1, 0, -1, 0, 0,
+        )
+
+        self.vertices = np.array(self.vertices, dtype=np.float32)
+        self.n_vertices = len(self.vertices) // 8
+
+        self.max = np.max(self.vertices, axis=0)
+        self.min = np.min(self.vertices, axis=0)
+        self.center = (self.max + self.min) / 2
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+        #Position
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        #Texture
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        #Normals
+        glEnableVertexAttribArray(2)
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+
+    def destroy(self):
+        glDeleteVertexArrays(1, (self.vao,))
+        glDeleteBuffers(1, (self.vbo,))
+
