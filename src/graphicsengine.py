@@ -10,17 +10,6 @@ class GraphicsEngine:
 
     def __init__(self):
         self.cube_mesh = CubeMesh()
-<<<<<<< HEAD
-        self.rayman = Mesh("assets/models/raymanModel.obj")
-        self.square = Mesh("assets/models/square.obj")
-        self.wood_texture = Material("assets/textures/wood.png")
-        self.rayman_texture = Material("assets/textures/raymanModel.png", "rayman")
-        self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
-        self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
-        self.carpet_texture = Material("assets/textures/dirtycarpet.jpg")
-
-        self.teefy_texture = Material("assets/textures/teefy.png")
-=======
         self.rayman = Mesh("../assets/models/raymanModel.obj")
         self.square = Mesh("../assets/models/square.obj")
         self.floor = Floor(w=10.0, h=10.0)
@@ -36,7 +25,6 @@ class GraphicsEngine:
         self.ceiling_texture = Material("../assets/textures/ceiling-tile.jpg")
 
         self.teefy_texture = Material("../assets/textures/teefy.png")
->>>>>>> dylan-branch
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
         
         self.light_texture = Material("assets/textures/lightbulb.png")
