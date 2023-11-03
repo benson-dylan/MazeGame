@@ -70,11 +70,29 @@ class Scene:
             SimpleComponent(
                 position=[10,0,15],
                 eulers=[0,0,0]
-            )
+            ),
+            SimpleComponent(
+                position=[-5,0,5],
+                eulers=[90,0,0]
+            ),
         ]
-        self.objects = [
-            Object([6,6.5,0], [0, 0, 0]), 
-            Object([10, 6.5, 10], [0, 0, 0]),
+        self.ceilings = [
+            SimpleComponent(
+                position=[5,5,5],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[5,5,5],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[15,5,15],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[5,5,15],
+                eulers=[0,0,0]
+            ),
         ]
         self.objects = []
         self.player = Player([5,2,5])
