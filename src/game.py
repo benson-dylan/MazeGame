@@ -42,29 +42,63 @@ class Scene:
         ]
         self.floors = [
             SimpleComponent(
-                position=[0,0,0],
+                position=[5,0,5],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[15,0,5],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[5,0,15],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[15,0,15],
+                eulers=[0,0,0]
+            ),
+        ]
+        self.walls = [
+            SimpleComponent(
+                position=[0,0,5],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[10,0,5],
+                eulers=[0,0,0]
+            ),
+            SimpleComponent(
+                position=[10,0,15],
                 eulers=[0,0,0]
             )
         ]
         self.objects = [
-            Object([6, 6.5, 0], [0, 0, 0], meshes['rayman'])
+            Object([6,6.5,0], [0, 0, 0]), 
+            Object([10, 6.5, 10], [0, 0, 0]),
         ]
-        self.player = Player([0,2,2])
+        self.objects = []
+        self.player = Player([5,2,5])
         self.lights = [
             Light(
-                position = [
-                    np.random.uniform(low=0.0, high=5.0),
-                    np.random.uniform(low=3.0, high=5.0),
-                    np.random.uniform(low=0.0, high=5.0)
-                ],
-                color = [
-                    np.random.uniform(low=0.0, high=0.9),
-                    np.random.uniform(low=0.0, high=1.0),
-                    np.random.uniform(low=0.0, high=1.0)
-                ],
-                intensity = 5
-            )
-            for i in range(8)
+                position = [5,4,5],
+                color = [0.8, 0.7, 0.4],
+                intensity = 10
+            ),
+            Light(
+                position = [5,4,10],
+                color = [0.8, 0.7, 0.4],
+                intensity = 10
+            ),
+            Light(
+                position = [10,4,10],
+                color = [0.8, 0.7, 0.4],
+                intensity = 10
+            ),
+            Light(
+                position = [7,4,7],
+                color = [0.8, 0.7, 0.4],
+                intensity = 10
+            ),
         ]
         self.collision_count = 0
 
@@ -215,6 +249,11 @@ class App:
             self.numFrames = -1
             self.frameTime = float(1000.0/max(1, framerate))
         self.numFrames += 1
+
+    def checkCollision(self, move_direction, walls):
+        for wall in self.scene.walls:
+            pass
+
 
     def quit(self):
         self.renderer.quit()       
