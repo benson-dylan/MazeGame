@@ -1,4 +1,5 @@
 import time
+import time
 import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
