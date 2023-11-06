@@ -12,27 +12,27 @@ class GraphicsEngine:
 
     def __init__(self):
         self.cube_mesh = CubeMesh()
-        self.rayman = Mesh("../assets/models/raymanModel.obj")
-        self.square = Mesh("../assets/models/square.obj")
+        self.rayman = Mesh("assets/models/raymanModel.obj")
+        self.square = Mesh("assets/models/square.obj")
         self.floor = Floor(w=10.0, h=10.0)
 
         self.wall = Wall(w=10.0, h=5.0)
         self.wall_edges = Wall(w=10.0, h=5.0)
 
         self.ceiling = Ceiling(w=10.0, h=10.0)
-        self.wood_texture = Material("../assets/textures/wood.png")
-        self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
-        self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
-        self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
-        self.carpet_texture = Material("../assets/textures/dirtycarpet.png")
+        self.wood_texture = Material("assets/textures/wood.png")
+        self.rayman_texture = Material("assets/textures/raymanModel.png", "rayman")
+        self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
+        self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
+        self.carpet_texture = Material("assets/textures/dirtycarpet.jpg")
 
-        self.wall_texture = Material("../assets/textures/yellowwallpaper.jpg")
-        self.ceiling_texture = Material("../assets/textures/ceiling-tile.jpg")
+        self.wall_texture = Material("assets/textures/yellowwallpaper.jpg")
+        self.ceiling_texture = Material("assets/textures/ceiling-tile.jpg")
 
-        self.teefy_texture = Material("../assets/textures/teefy.png")
+        self.teefy_texture = Material("assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
         
-        self.light_texture = Material("../assets/textures/lightbulb.png")
+        self.light_texture = Material("assets/textures/lightbulb.png")
         self.light_billboard = BillBoard(w=0.2, h=0.2)
 
 
