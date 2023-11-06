@@ -6,8 +6,6 @@ from utils import load_image
 from objLoaderV4 import ObjLoader
 import math
 
-
-
 class GraphicsEngine:
 
     def __init__(self):
@@ -15,10 +13,7 @@ class GraphicsEngine:
         self.rayman = Mesh("../assets/models/raymanModel.obj")
         self.square = Mesh("../assets/models/square.obj")
         self.floor = Floor(w=10.0, h=10.0)
-
-        self.wall = Wall(w=10.0, h=5.0)
-        self.wall_edges = Wall(w=10.0, h=5.0)
-
+        self.wall = Wall(w=10.0, h=10.0)
         self.ceiling = Ceiling(w=10.0, h=10.0)
         self.wood_texture = Material("../assets/textures/wood.png")
         self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
@@ -34,7 +29,6 @@ class GraphicsEngine:
         
         self.light_texture = Material("../assets/textures/lightbulb.png")
         self.light_billboard = BillBoard(w=0.2, h=0.2)
-
 
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
@@ -127,19 +121,7 @@ class GraphicsEngine:
             self.wall_texture.use()
 
             model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_y_rotation(np.deg2rad(180 - wall.eulers[0]), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(wall.position, dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
-            self.shader["model_matrix"] = model_transforms
-            glBindVertexArray(self.wall.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
-        
-        for wall in scene.wall_edges:
-
-            self.wall_texture.use()
-
-            model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_y_rotation(np.deg2rad(180 - wall.eulers[0]), dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_x_rotation(np.deg2rad(180 - wall.eulers[0]), dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(wall.position, dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
             self.shader["model_matrix"] = model_transforms
@@ -211,9 +193,8 @@ class GraphicsEngine:
         self.teefy_texture.destroy()
         self.light_billboard.destroy()
         self.light_texture.destroy()
-        self.wood_texture.destroy()
         glDeleteProgram(self.shader.shader)
-       
+        self.wood_texture.destroy()
 
 class SimpleComponent:
 
@@ -441,6 +422,7 @@ class Wall:
             0, h/2, -w/2, 0, 0, -1, 0, 0,
             0, -h/2, -w/2, 0, 1, -1, 0, 0,
             0, -h/2, w/2, 1, 1, -1, 0, 0,
+
             0, h/2, -w/2, 0, 0, -1, 0, 0,
             0, -h/2, w/2, 1, 1, -1, 0, 0,
             0, h/2, w/2, 1, 0, -1, 0, 0,
