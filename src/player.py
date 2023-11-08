@@ -11,7 +11,7 @@ class Player:
         self.theta = 0
         self.phi = 0
         self.update_vectors()
-        self.bounding_box_size = np.array([1, 1, 1], dtype=np.float32)
+        self.bounding_box_size = np.array([.5, .5, .5], dtype=np.float32)
 
     def update_vectors(self):
 
