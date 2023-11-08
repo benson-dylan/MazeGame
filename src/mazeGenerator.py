@@ -50,20 +50,6 @@ class MazeGenerator:
                 else:
                     count = count + 1
 
-        self.create_wall_boxes(maze)
 
         return player_x, player_y, maze, exit_x, exit_y
     
-    def create_wall_boxes(self, maze):
-        wall_thickness = .9
-        wall_height = 2.0 
-        self.wall_boxes.clear()
-
-        for y in range(self.map_size):
-            for x in range(self.map_size):
-                if maze[y][x] == 1:
-                    position = np.array([x + 0.5, wall_height / 2, y + 0.5], dtype=np.float32)
-                    size = np.array([1, wall_height, wall_thickness], dtype=np.float32)
-                    self.wall_boxes.append({'position': position, 'size': size})
-        for box in self.wall_boxes:
-            print(f"Wall at position {box['position']} with size {box['size']}")

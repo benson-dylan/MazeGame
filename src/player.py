@@ -11,7 +11,7 @@ class Player:
         self.theta = 0
         self.phi = 0
         self.update_vectors()
-        self.bounding_box_size = np.array([.1, .1, .1], dtype=np.float32)
+        self.bounding_box_size = np.array([1, 1, 1], dtype=np.float32)
 
     def update_vectors(self):
 
@@ -32,4 +32,10 @@ class Player:
         half_size = self.bounding_box_size / 2
         min_corner = self.position - half_size
         max_corner = self.position + half_size
+        return min_corner, max_corner
+    
+    def get_bounding_box_at_position(self, position):
+        half_size = self.bounding_box_size / 2
+        min_corner = position - half_size
+        max_corner = position + half_size
         return min_corner, max_corner

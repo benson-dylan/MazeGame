@@ -12,8 +12,8 @@ class GraphicsEngine:
 
     def __init__(self):
         # self.cube_mesh = CubeWallMesh()
-        self.rayman = Mesh("../assets/models/raymanModel.obj")
-        self.square = Mesh("../assets/models/square.obj")
+        self.rayman = Mesh("assets/models/raymanModel.obj")
+        self.square = Mesh("assets/models/square.obj")
         self.floor = Floor(w=10.0, h=10.0)
 
         self.wall_mesh = CubeWallMesh() 
@@ -193,11 +193,17 @@ class GraphicsEngine:
 
 class SimpleComponent:
 
-    def __init__(self, position, eulers):
-        
+    def __init__(self, position, eulers, size):
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
+        self.size = np.array(size, dtype=np.float32)
 
+    def calculate_bounding_box(self):
+        half_size = self.size / 2
+        self.min_corner = self.position - half_size
+        self.max_corner = self.position + half_size
+        self.bounding_box = (self.min_corner, self.max_corner)
+        return self.bounding_box
 
 class CubeMesh:
 
@@ -498,6 +504,12 @@ class Wall:
         #Normals
         glEnableVertexAttribArray(2)
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+
+    def calculate_bounding_box(self):
+        half_size = self.size / 2
+        min_corner = self.position - half_size
+        max_corner = self.position + half_size
+        return min_corner, max_corner
 
     def destroy(self):
         glDeleteVertexArrays(1, (self.vao,))
