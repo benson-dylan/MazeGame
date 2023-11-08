@@ -11,20 +11,20 @@ import math
 class GraphicsEngine:
 
     def __init__(self):
-        self.cube_mesh = CubeMesh()
+        # self.cube_mesh = CubeWallMesh()
         self.rayman = Mesh("../assets/models/raymanModel.obj")
         self.square = Mesh("../assets/models/square.obj")
         self.floor = Floor(w=10.0, h=10.0)
 
-        self.wall = Wall(w=10.0, h=5.0)
-        self.wall_edges = Wall(w=10.0, h=5.0)
+        self.wall_mesh = CubeWallMesh() 
 
         self.ceiling = Ceiling(w=10.0, h=10.0)
         self.wood_texture = Material("../assets/textures/wood.png")
         self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
         self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
-       
+
+        # Changed the texture to a compressed version, might help with performance
         self.carpet_texture = Material("../assets/textures/compressed/dirtycarpet-min.png")
         self.wall_texture = Material("../assets/textures/compressed/yellowwallpaper-min.jpg")
         self.ceiling_texture = Material("../assets/textures/compressed/ceiling-tile-min.jpg")
@@ -88,19 +88,20 @@ class GraphicsEngine:
 
         glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
 
-        self.rayman_texture.use()
-        #glBindVertexArray(self.cube_mesh.vao)
-
-        '''
-        for cube in scene.cubes:
-            model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(cube.eulers), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(cube.position, dtype=np.float32))
-            self.shader["model_matrix"] = model_transforms
-            glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.n_vertices)
-        '''
-
         
+        for wall in scene.walls:
+
+            self.wall_texture.use()
+
+            model_transforms = pyrr.matrix44.create_identity(np.float32)
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(wall.eulers), dtype=np.float32))
+            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(wall.position, dtype=np.float32))
+            self.shader["model_matrix"] = model_transforms
+            glBindVertexArray(self.wall_mesh.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.wall_mesh.n_vertices)
+        
+
+        self.rayman_texture.use()
         for object in scene.objects:
             model_transforms = pyrr.matrix44.create_identity(np.float32)
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(object.eulers), dtype=np.float32))
@@ -120,30 +121,6 @@ class GraphicsEngine:
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
             self.shader["model_matrix"] = model_transforms
             glBindVertexArray(self.floor.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
-
-        for wall in scene.walls:
-
-            self.wall_texture.use()
-
-            model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_y_rotation(np.deg2rad(180 - wall.eulers[0]), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(wall.position, dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
-            self.shader["model_matrix"] = model_transforms
-            glBindVertexArray(self.wall.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
-        
-        for wall in scene.wall_edges:
-
-            self.wall_texture.use()
-
-            model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_y_rotation(np.deg2rad(180 - wall.eulers[0]), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(wall.position, dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32), dtype=np.float32))
-            self.shader["model_matrix"] = model_transforms
-            glBindVertexArray(self.wall.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
 
         for ceiling in scene.ceilings:
@@ -204,7 +181,7 @@ class GraphicsEngine:
         glFlush()
     
     def quit(self):
-        self.cube_mesh.destroy()
+        self.wall_mesh.destroy()
         self.rayman.destroy()
         self.square.destroy
         self.teefy_billboard.destroy()
@@ -221,6 +198,7 @@ class SimpleComponent:
         
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
+
 
 class CubeMesh:
 
@@ -275,6 +253,62 @@ class CubeMesh:
              0.5,  0.5,  0.5, 1, 0,
             -0.5,  0.5,  0.5, 0, 0,
             -0.5,  0.5, -0.5, 0, 1
+        )
+
+        self.vertices = np.array(self.vertices, dtype=np.float32)
+        self.n_vertices = len(self.vertices) // 5
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
+        
+
+    def destroy(self):
+        glDeleteVertexArrays(1, (self.vao,))
+        glDeleteBuffers(1, (self.vbo,))
+        
+# CUBE WALL
+class CubeWallMesh:
+    def __init__(self):
+        # x, y, z, s, t
+        self.vertices = (
+            -2.5, -2.5, -2.5, 0, 0,
+             2.5, -2.5, -2.5, 1, 0,
+             2.5,  2.5, -2.5, 1, 1,
+
+             2.5,  2.5, -2.5, 1, 1,
+            -2.5,  2.5, -2.5, 0, 1,
+            -2.5, -2.5, -2.5, 0, 0,
+
+            -2.5, -2.5,  2.5, 0, 0,
+             2.5, -2.5,  2.5, 1, 0,
+             2.5,  2.5,  2.5, 1, 1,
+
+             2.5,  2.5,  2.5, 1, 1,
+            -2.5,  2.5,  2.5, 0, 1,
+            -2.5, -2.5,  2.5, 0, 0,
+
+            -2.5,  2.5,  2.5, 1, 0,
+            -2.5,  2.5, -2.5, 1, 1,
+            -2.5, -2.5, -2.5, 0, 1,
+
+            -2.5, -2.5, -2.5, 0, 1,
+            -2.5, -2.5,  2.5, 0, 0,
+            -2.5,  2.5,  2.5, 1, 0,
+
+             2.5,  2.5,  2.5, 1, 0,
+             2.5,  2.5, -2.5, 1, 1,
+             2.5, -2.5, -2.5, 0, 1,
+
+             2.5, -2.5, -2.5, 0, 1,
+             2.5, -2.5,  2.5, 0, 0,
+             2.5,  2.5,  2.5, 1, 0,
         )
 
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -441,6 +475,7 @@ class Wall:
             0, h/2, -w/2, 0, 0, -1, 0, 0,
             0, -h/2, -w/2, 0, 1, -1, 0, 0,
             0, -h/2, w/2, 1, 1, -1, 0, 0,
+            
             0, h/2, -w/2, 0, 0, -1, 0, 0,
             0, -h/2, w/2, 1, 1, -1, 0, 0,
             0, h/2, w/2, 1, 0, -1, 0, 0,
