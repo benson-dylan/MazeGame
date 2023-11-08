@@ -57,6 +57,27 @@ class Scene:
         ]
 
         '''
+        Generate the walls
+        '''
+        self.walls = []
+        cube_size = 5.0 # Cube wall size for offsetting the position
+        for i in range(len(self.maze)):
+            for j in range(len(self.maze[i])):
+                if self.maze[i][j] == 1:
+                    # Calculate the position of the cube based on map coordinates
+                    x = j * cube_size
+                    y = 2.5
+                    z = i * cube_size
+
+                    # Create a cube at the specified position
+                    self.walls.append(
+                        SimpleComponent(
+                            position=[x, y, z],
+                            eulers=[0, 0, 0]
+                        )
+                    )
+
+        '''
         Generate the floors
         '''
         # Define the dimensions of the maze
@@ -79,42 +100,7 @@ class Scene:
                     )
                 )
                     
-
-        """
-        This will be used for inside walls
-        """
-        self.walls = []
-        
-        """
-        This will be used to generate the edge walls of the maze
-        """
-        self.wall_edges = []
-        row_indices, col_indices = np.where(self.maze == 1)
-        
-        # Find the unique row and column indices of edge elements
-        unique_row_indices = np.unique(row_indices)
-        unique_col_indices = np.unique(col_indices)
-
-        # Iterate through unique row and column indices and check if they are on the outer edge
-        for row in unique_row_indices:
-            for col in unique_col_indices:
-                if (
-                    row == unique_row_indices[0] or row == unique_row_indices[-1] or
-                    col == unique_col_indices[0] or col == unique_col_indices[-1]
-                ):
-                    # Set the initial eulers value
-                    eulers = [90, 0, 0]
-                    
-                    # Check if row is 0 and adjust eulers
-                    if row == unique_row_indices[0] or row == unique_row_indices[-1]:
-                        eulers = [0, 0, 0]
-
-                    self.wall_edges.append(
-                        SimpleComponent(
-                            position=[row * 5, 2.5 , col * 5],
-                            eulers=eulers
-                        )
-                    )
+       
         '''
         Generate the ceilings
         '''
@@ -134,7 +120,7 @@ class Scene:
 
         
         self.objects = []
-        self.player = Player([self.player_y, 2 , self.player_x])
+        self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
         self.lights = [
             Light(
