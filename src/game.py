@@ -126,26 +126,7 @@ class Scene:
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
         self.lights = [
-            Light(
-                position = [5,4,5],
-                color = [0.8, 0.7, 0.4],
-                intensity = 10
-            ),
-            Light(
-                position = [5,4,10],
-                color = [0.8, 0.7, 0.4],
-                intensity = 10
-            ),
-            Light(
-                position = [10,4,10],
-                color = [0.8, 0.7, 0.4],
-                intensity = 10
-            ),
-            Light(
-                position = [7,4,7],
-                color = [0.8, 0.7, 0.4],
-                intensity = 10
-            ),
+        
         ]
 
         # Play the ambient sound

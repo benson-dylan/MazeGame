@@ -12,26 +12,26 @@ class GraphicsEngine:
 
     def __init__(self):
         # self.cube_mesh = CubeWallMesh()
-        self.rayman = Mesh("assets/models/raymanModel.obj")
-        self.square = Mesh("assets/models/square.obj")
+        self.rayman = Mesh("../assets/models/raymanModel.obj")
+        self.square = Mesh("../assets/models/square.obj")
         self.floor = Floor(w=10.0, h=10.0)
 
         self.wall_mesh = CubeWallMesh() 
 
         self.ceiling = Ceiling(w=10.0, h=10.0)
-        self.wood_texture = Material("assets/textures/wood.png")
-        self.rayman_texture = Material("assets/textures/raymanModel.png", "rayman")
-        self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
-        self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
-        self.carpet_texture = Material("assets/textures/dirtycarpet.png")
+        self.wood_texture = Material("../assets/textures/wood.png")
+        self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
+        self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
+        self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
+        self.carpet_texture = Material("../assets/textures/dirtycarpet.png")
 
-        self.wall_texture = Material("assets/textures/yellowwallpaper.jpg")
-        self.ceiling_texture = Material("assets/textures/ceiling-tile.jpg")
+        self.wall_texture = Material("../assets/textures/yellowwallpaper.jpg")
+        self.ceiling_texture = Material("../assets/textures/ceiling-tile.jpg")
 
-        self.teefy_texture = Material("assets/textures/teefy.png")
+        self.teefy_texture = Material("../assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
         
-        self.light_texture = Material("assets/textures/lightbulb.png")
+        self.light_texture = Material("../assets/textures/lightbulb.png")
         self.light_billboard = BillBoard(w=0.2, h=0.2)
 
 
@@ -47,20 +47,20 @@ class GraphicsEngine:
         projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
 
-        self.lightLocation = {
-            "position":[
-                glGetUniformLocation(self.shader.shader, f"Lights[{i}].position")
-                for i in range(4)
-            ],
-            "color": [
-                glGetUniformLocation(self.shader.shader, f"Lights[{i}].color")
-                for i in range(4)
-            ],
-            "intensity": [
-                glGetUniformLocation(self.shader.shader, f"Lights[{i}].intensity")
-                for i in range(4)
-            ],
-        }
+        # self.lightLocation = {
+        #     "position":[
+        #         glGetUniformLocation(self.shader.shader, f"Lights[{i}].position")
+        #         for i in range(4)
+        #     ],
+        #     "color": [
+        #         glGetUniformLocation(self.shader.shader, f"Lights[{i}].color")
+        #         for i in range(4)
+        #     ],
+        #     "intensity": [
+        #         glGetUniformLocation(self.shader.shader, f"Lights[{i}].intensity")
+        #         for i in range(4)
+        #     ],
+        # }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
 
         glUseProgram(self.light_shader.shader)

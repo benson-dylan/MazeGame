@@ -24,10 +24,10 @@ void main()
     vec4 baseTexture = texture(imageTexture, fragmentTexCoord);
     vec3 temp = 0.2 * baseTexture.rgb;
 
-    for (int i = 0; i < 4; i++)
-    {
-        temp += calculatePointLight(Lights[i], fragmentPosition, fragmentNormal);
-    }
+    // for (int i = 0; i < 4; i++)
+    // {
+    //     temp += calculatePointLight(Lights[i], fragmentPosition, fragmentNormal);
+    // }
 
     color = vec4(temp, baseTexture.a);
     
