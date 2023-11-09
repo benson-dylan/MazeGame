@@ -87,9 +87,9 @@ class Scene:
         maze_height = len(self.maze)
         maze_width = len(self.maze[0])
 
-        # Generate floors for the maze
+        # Generate floors and ceilings for the maze
         self.floors = []
-
+        self.ceilings = []
         for row in range(maze_height):
             for col in range(maze_width):
                 # Multiply the x and y positions by 5 to create the floor
@@ -103,18 +103,6 @@ class Scene:
                         size=0
                     )
                 )
-                    
-       
-        '''
-        Generate the ceilings
-        '''
-        self.ceilings = []
-        for row in range(maze_height):
-            for col in range(maze_width):
-                # Multiply the x and y positions by 5 to create the floor
-                x_position = col * 5
-                z_position = row * 5
-
                 self.ceilings.append(
                     SimpleComponent(
                         position=[x_position, 5, z_position],
@@ -122,7 +110,6 @@ class Scene:
                         size=0
                     )
                 )
-
         
         self.objects = []
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
@@ -150,11 +137,6 @@ class Scene:
                 print("No clear spawn location found. Please check your maze configuration.")
 
     def update(self, rate):
-        
-        for object in self.objects:
-            object.eulers[2] += 0.25 * rate
-            if object.eulers[2] > 360:
-                object.eulers[2] -= 360
 
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
@@ -362,10 +344,6 @@ class App:
             self.numFrames = -1
             self.frameTime = float(1000.0/max(1, framerate))
         self.numFrames += 1
-
-    def checkCollision(self, move_direction, walls):
-        for wall in self.scene.walls:
-            pass
 
 
     def quit(self):
