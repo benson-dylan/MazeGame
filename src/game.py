@@ -38,6 +38,9 @@ class Scene:
 
     def __init__(self) -> None:
         self.maze_size = 10
+        self.walls = []
+        cube_size = 5.0
+        wall_height = 2.5
 
         self.mazeGenerator = MazeGenerator(self.maze_size)
         self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
@@ -48,35 +51,33 @@ class Scene:
         self.teefys = [
             SimpleComponent(
                 position= [2,2,0],
-                eulers= [0,0,0]
+                eulers= [0,0,0],
+                size=0
             ),
             SimpleComponent(
                 position= [5,2,2],
-                eulers= [0,0,0]
+                eulers= [0,0,0],
+                size=0
             ),
         ]
 
         '''
         Generate the walls
         '''
-        self.walls = []
-        cube_size = 5.0 # Cube wall size for offsetting the position
         for i in range(len(self.maze)):
             for j in range(len(self.maze[i])):
                 if self.maze[i][j] == 1:
-                    # Calculate the position of the cube based on map coordinates
                     x = j * cube_size
-                    y = 2.5
+                    y = wall_height / 2
                     z = i * cube_size
-
-                    # Create a cube at the specified position
-                    self.walls.append(
-                        SimpleComponent(
-                            position=[x, y, z],
-                            eulers=[0, 0, 0]
-                        )
-                    )
-
+                    wall_size = [cube_size, wall_height, cube_size]
+                    wall_component = SimpleComponent(
+                        position=[x, y, z],
+                        eulers=[0, 0, 0],
+                        size=wall_size
+            )
+                    wall_component.calculate_bounding_box()
+                    self.walls.append(wall_component)
         '''
         Generate the floors
         '''
@@ -96,7 +97,8 @@ class Scene:
                 self.floors.append(
                     SimpleComponent(
                         position=[x_position, 0, z_position],
-                        eulers= [0, 0, 0]
+                        eulers= [0, 0, 0],
+                        size=0
                     )
                 )
                     
@@ -114,7 +116,8 @@ class Scene:
                 self.ceilings.append(
                     SimpleComponent(
                         position=[x_position, 5, z_position],
-                        eulers= [0, 0, 0]
+                        eulers= [0, 0, 0],
+                        size=0
                     )
                 )
 
@@ -152,6 +155,10 @@ class Scene:
         self.play = self.sound.play
         # Initialize footstep time
         self.last_footstep_time = 0
+        self.footstep_delay = 0.5
+
+        if self.check_immediate_collisions():
+            print("Collision detected at the start position!")
 
     def update(self, rate):
         
@@ -168,23 +175,49 @@ class Scene:
             if distance < 1:
                 teefy.position[1] += 100 """
         
+    def check_immediate_collisions(self):
+        player_min_corner, player_max_corner = self.player.get_bounding_box()
+        for wall_box in self.mazeGenerator.wall_boxes:
+            wall_min_corner = wall_box['position'] - wall_box['size'] / 2
+            wall_max_corner = wall_box['position'] + wall_box['size'] / 2
+            if self.check_collision(player_min_corner, player_max_corner, wall_min_corner, wall_max_corner):
+                print(f"Immediate collision at start with wall at: {wall_box['position']}")
+                return True
+        return False
+    
+    def check_collision(self, player_min, player_max, wall_min, wall_max):
+        overlap_x = (wall_min[0] < player_max[0]) and (player_min[0] < wall_max[0])
+        overlap_y = (wall_min[1] < player_max[1]) and (player_min[1] < wall_max[1])
+        overlap_z = (wall_min[2] < player_max[2]) and (player_min[2] < wall_max[2])
+        return overlap_x and overlap_y and overlap_z
+
+    
     def move_player(self, dPos):
-        
         dPos = np.array(dPos, dtype=np.float32)
-        self.player.position += dPos
+        for axis in range(3):
+            new_position = self.player.position.copy()
+            new_position[axis] += dPos[axis]
+            player_min_corner, player_max_corner = self.player.get_bounding_box_at_position(new_position)
+            collision = False
+            for wall in self.walls: 
+                if self.check_collision(player_min_corner, player_max_corner, wall.min_corner, wall.max_corner):
+                    print("collision detected")
+                    collision = True
+                    dPos[axis] = 0
+                    break
+            if not collision:
+                self.player.position[axis] += dPos[axis]
+        if np.any(dPos):
+            self.update_footsteps()
 
-        # Delay between footstep sounds (in seconds)
-        footstep_delay = 0.5  # Adjust this to your desired delay
-
-        # Get the current time
+    def update_footsteps(self):
         current_time = time.time()
-
-        # Check if enough time has passed since the last footstep sound
-        if current_time - self.last_footstep_time >= footstep_delay:
+        if current_time - self.last_footstep_time >= self.footstep_delay:
             self.play(self.sound.player_move)
-
-            # Update the last footstep time
             self.last_footstep_time = current_time
+
+
+
     def spin_player(self, dTheta, dPhi):
 
         self.player.theta += dTheta
@@ -321,6 +354,5 @@ class App:
 if __name__ == "__main__":
     window = initialize_glfw()
     myApp = App(window)
-
 
 

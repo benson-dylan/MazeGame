@@ -7,6 +7,7 @@ class MazeGenerator:
     def __init__(self, mapSize):
         
         self.map_size = mapSize
+        self.wall_boxes = []
 
 
     def generate_maze(self):
@@ -49,4 +50,6 @@ class MazeGenerator:
                 else:
                     count = count + 1
 
+
         return player_x, player_y, maze, exit_x, exit_y
+    
