@@ -110,10 +110,8 @@ class GraphicsEngine:
             glBindVertexArray(self.rayman.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
 
+        self.carpet_texture.use()
         for floor in scene.floors:
-
-            self.carpet_texture.use()
-
             model_transforms = pyrr.matrix44.create_identity(np.float32)
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_z_rotation(np.deg2rad(90), dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(floor.position, dtype=np.float32))
@@ -122,10 +120,8 @@ class GraphicsEngine:
             glBindVertexArray(self.floor.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
 
+        self.ceiling_texture.use()
         for ceiling in scene.ceilings:
-
-            self.ceiling_texture.use()
-
             model_transforms = pyrr.matrix44.create_identity(np.float32)
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_z_rotation(np.deg2rad(270), dtype=np.float32))
             model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(ceiling.position, dtype=np.float32))
@@ -134,23 +130,23 @@ class GraphicsEngine:
             glBindVertexArray(self.ceiling.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
 
-        for teefy in scene.teefys:
+        # for teefy in scene.teefys:
 
-            self.teefy_texture.use()
+        #     self.teefy_texture.use()
 
-            directionFromPlayer = teefy.position - scene.player.position
-            angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
-            dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
-            angle2 = np.arctan2(directionFromPlayer[1], dist2d)
+        #     directionFromPlayer = teefy.position - scene.player.position
+        #     angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
+        #     dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
+        #     angle2 = np.arctan2(directionFromPlayer[1], dist2d)
 
-            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy.position, dtype=np.float32))
+        #     model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy.position, dtype=np.float32))
 
-            self.shader["model_matrix"] = model_transform
-            glBindVertexArray(self.teefy_billboard.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
+        #     self.shader["model_matrix"] = model_transform
+        #     glBindVertexArray(self.teefy_billboard.vao)
+        #     glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
 
         glUseProgram(self.light_shader.shader)
 
