@@ -4,6 +4,8 @@ import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
 import numpy as np
+import random
+
 
 from player import Player
 from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
@@ -39,8 +41,8 @@ class Scene:
     def __init__(self) -> None:
         self.maze_size = 10
         self.walls = []
-        cube_size = 5.0
-        wall_height = 2.5
+        self.cube_size = 5.0
+        self.wall_height = 2.5
 
         self.mazeGenerator = MazeGenerator(self.maze_size)
         self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
@@ -67,10 +69,10 @@ class Scene:
         for i in range(len(self.maze)):
             for j in range(len(self.maze[i])):
                 if self.maze[i][j] == 1:
-                    x = j * cube_size
-                    y = wall_height / 2
-                    z = i * cube_size
-                    wall_size = [cube_size, wall_height, cube_size]
+                    x = j * self.cube_size
+                    y = self.wall_height / 2
+                    z = i * self.cube_size
+                    wall_size = [self.cube_size, self.wall_height, self.cube_size]
                     wall_component = SimpleComponent(
                         position=[x, y, z],
                         eulers=[0, 0, 0],
@@ -158,7 +160,13 @@ class Scene:
         self.footstep_delay = 0.5
 
         if self.check_immediate_collisions():
-            print("Collision detected at the start position!")
+            print("Collision detected at the start position! Finding a new spawn location.")
+            new_spawn_position = self.find_clear_spawn()
+            if new_spawn_position:
+                print(f"New spawn location found at: {new_spawn_position}")
+                self.player.position = new_spawn_position
+            else:
+                print("No clear spawn location found. Please check your maze configuration.")
 
     def update(self, rate):
         
@@ -176,12 +184,43 @@ class Scene:
                 teefy.position[1] += 100 """
         
     def check_immediate_collisions(self):
+        # Get the bounding box for the player
         player_min_corner, player_max_corner = self.player.get_bounding_box()
-        for wall_box in self.mazeGenerator.wall_boxes:
-            wall_min_corner = wall_box['position'] - wall_box['size'] / 2
-            wall_max_corner = wall_box['position'] + wall_box['size'] / 2
+        print(f"Player Bounding Box: Min {player_min_corner}, Max {player_max_corner}")  # Debug print
+
+        # Iterate over all wall components to check for collision
+        for wall in self.walls:
+            wall_min_corner = wall.min_corner
+            wall_max_corner = wall.max_corner
+
             if self.check_collision(player_min_corner, player_max_corner, wall_min_corner, wall_max_corner):
-                print(f"Immediate collision at start with wall at: {wall_box['position']}")
+                print(f"Immediate collision detected with wall at: {wall.position}")  # Debug print
+                return True
+
+        print("No immediate collisions detected.")  # Debug print
+        return False
+    
+    def find_clear_spawn(self):
+        potential_positions = [(i, j) for i in range(self.maze_size) for j in range(self.maze_size) if self.maze[i][j] == 0]
+        random.shuffle(potential_positions)
+        for i, j in potential_positions:
+            x = j * self.cube_size
+            y = 2
+            z = i * self.cube_size
+
+            if not self.check_collision_with_walls(x, y, z):
+                print(f"Clear spawn found at maze coordinates ({i}, {j}), world coordinates ({x}, {y}, {z})")
+                return [x, y, z]
+
+        print("Unable to find a clear spawn position.")
+        return None
+
+    def check_collision_with_walls(self, x, y, z):
+        player_min_corner, player_max_corner = self.player.get_bounding_box_at_position([x, y, z])
+        for wall in self.walls:
+            wall_min_corner = wall.min_corner
+            wall_max_corner = wall.max_corner
+            if self.check_collision(player_min_corner, player_max_corner, wall_min_corner, wall_max_corner):
                 return True
         return False
     
