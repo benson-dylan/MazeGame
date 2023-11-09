@@ -1,3 +1,5 @@
+import time
+import time
 import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
@@ -5,6 +7,11 @@ import numpy as np
 
 from player import Player
 from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
+
+from sound import Sound
+import pygame as pg
+
+from mazeGenerator import MazeGenerator
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -30,6 +37,14 @@ def initialize_glfw():
 class Scene:
 
     def __init__(self) -> None:
+        self.maze_size = 10
+
+        self.mazeGenerator = MazeGenerator(self.maze_size)
+        self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
+        print(self.maze)
+        print("Player Location", self.player_x, self.player_y)
+        print("Exit Location", self.exit_x, self.exit_y)
+
         self.teefys = [
             SimpleComponent(
                 position= [2,2,0],
@@ -40,62 +55,73 @@ class Scene:
                 eulers= [0,0,0]
             ),
         ]
-        self.floors = [
-            SimpleComponent(
-                position=[5,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[15,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[5,0,15],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[15,0,15],
-                eulers=[0,0,0]
-            ),
-        ]
-        self.walls = [
-            SimpleComponent(
-                position=[0,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[10,0,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[10,0,15],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[-5,0,5],
-                eulers=[90,0,0]
-            ),
-        ]
-        self.ceilings = [
-            SimpleComponent(
-                position=[5,5,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[5,5,5],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[15,5,15],
-                eulers=[0,0,0]
-            ),
-            SimpleComponent(
-                position=[5,5,15],
-                eulers=[0,0,0]
-            ),
-        ]
+
+        '''
+        Generate the walls
+        '''
+        self.walls = []
+        cube_size = 5.0 # Cube wall size for offsetting the position
+        for i in range(len(self.maze)):
+            for j in range(len(self.maze[i])):
+                if self.maze[i][j] == 1:
+                    # Calculate the position of the cube based on map coordinates
+                    x = j * cube_size
+                    y = 2.5
+                    z = i * cube_size
+
+                    # Create a cube at the specified position
+                    self.walls.append(
+                        SimpleComponent(
+                            position=[x, y, z],
+                            eulers=[0, 0, 0]
+                        )
+                    )
+
+        '''
+        Generate the floors
+        '''
+        # Define the dimensions of the maze
+        maze_height = len(self.maze)
+        maze_width = len(self.maze[0])
+
+        # Generate floors for the maze
+        self.floors = []
+
+        for row in range(maze_height):
+            for col in range(maze_width):
+                # Multiply the x and y positions by 5 to create the floor
+                x_position = col * 5
+                z_position = row * 5
+
+                self.floors.append(
+                    SimpleComponent(
+                        position=[x_position, 0, z_position],
+                        eulers= [0, 0, 0]
+                    )
+                )
+                    
+       
+        '''
+        Generate the ceilings
+        '''
+        self.ceilings = []
+        for row in range(maze_height):
+            for col in range(maze_width):
+                # Multiply the x and y positions by 5 to create the floor
+                x_position = col * 5
+                z_position = row * 5
+
+                self.ceilings.append(
+                    SimpleComponent(
+                        position=[x_position, 5, z_position],
+                        eulers= [0, 0, 0]
+                    )
+                )
+
+        
         self.objects = []
-        self.player = Player([5,2,5])
+        self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
+        
         self.lights = [
             Light(
                 position = [5,4,5],
@@ -119,6 +145,14 @@ class Scene:
             ),
         ]
 
+        # Play the ambient sound
+        self.sound = Sound()
+        pg.mixer.music.play(-1)
+
+        self.play = self.sound.play
+        # Initialize footstep time
+        self.last_footstep_time = 0
+
     def update(self, rate):
         
         for object in self.objects:
@@ -126,19 +160,31 @@ class Scene:
             if object.eulers[2] > 360:
                 object.eulers[2] -= 360
 
-        '''  # OBJECT COLLISION #
-        for teefy in self.teefys:
+        # OBJECT COLLISION #
+        """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
             distance = np.sqrt(vector[0] ** 2 + vector[2] ** 2)
             print(distance)
             if distance < 1:
-                teefy.position[1] += 100
-        '''
+                teefy.position[1] += 100 """
+        
     def move_player(self, dPos):
-
+        
         dPos = np.array(dPos, dtype=np.float32)
         self.player.position += dPos
-    
+
+        # Delay between footstep sounds (in seconds)
+        footstep_delay = 0.5  # Adjust this to your desired delay
+
+        # Get the current time
+        current_time = time.time()
+
+        # Check if enough time has passed since the last footstep sound
+        if current_time - self.last_footstep_time >= footstep_delay:
+            self.play(self.sound.player_move)
+
+            # Update the last footstep time
+            self.last_footstep_time = current_time
     def spin_player(self, dTheta, dPhi):
 
         self.player.theta += dTheta
@@ -181,6 +227,8 @@ class App:
             14: 180
         }
 
+        
+        
         self.mainLoop()
 
 
@@ -221,10 +269,13 @@ class App:
             combo += 4
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_D) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 8
+        
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_SHIFT) == GLFW_CONSTANTS.GLFW_PRESS:
             runBoost = 1.5
-        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_CONTROL) == GLFW_CONSTANTS.GLFW_PRESS:
+        elif glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_CONTROL) == GLFW_CONSTANTS.GLFW_PRESS:
             crouchWalk = 0.5
+
+        
 
         if combo in self.walk_offset_lookup:
             directionModifier = self.walk_offset_lookup[combo]
@@ -234,6 +285,9 @@ class App:
                 self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk
             ]
             self.scene.move_player(dPos)
+            
+        
+        
 
     def handleMouse(self):
 
