@@ -70,47 +70,47 @@ class Scene:
             for j in range(len(self.maze[i])):
                 if self.maze[i][j] == 1:
                     x = j * self.cube_size
-                    y = self.wall_height / 2
+                    y = self.wall_height
                     z = i * self.cube_size
                     wall_size = [self.cube_size, self.wall_height, self.cube_size]
                     wall_component = SimpleComponent(
                         position=[x, y, z],
                         eulers=[0, 0, 0],
                         size=wall_size
-            )
+                    )
                     wall_component.calculate_bounding_box()
                     self.walls.append(wall_component)
         '''
-        Generate the floors
+        Generate the floors and ceiling
         '''
-        # Define the dimensions of the maze
-        maze_height = len(self.maze)
-        maze_width = len(self.maze[0])
-
         # Generate floors and ceilings for the maze
         self.floors = []
         self.ceilings = []
-        for row in range(maze_height):
-            for col in range(maze_width):
-                # Multiply the x and y positions by 5 to create the floor
-                x_position = col * 5
-                z_position = row * 5
 
-                self.floors.append(
-                    SimpleComponent(
-                        position=[x_position, 0, z_position],
-                        eulers= [0, 0, 0],
-                        size=0
+        for i in range(len(self.maze)):
+            for j in range(len(self.maze[i])):
+                if self.maze[i][j] == 0:
+                    x_position = j * 5
+                    z_position = i * 5
+
+                    # Floor
+                    self.floors.append(
+                        SimpleComponent(
+                            position=[x_position, 0, z_position],
+                            eulers= [0, 0, 0],
+                            size=0
+                        )
                     )
-                )
-                self.ceilings.append(
-                    SimpleComponent(
-                        position=[x_position, 5, z_position],
-                        eulers= [0, 0, 0],
-                        size=0
-                    )
-                )
-        
+
+                    # Ceiling
+                    self.ceilings.append(
+                        SimpleComponent(
+                            position=[x_position, 5, z_position],
+                            eulers= [0, 0, 0],
+                            size=0
+                        )
+                    )    
+                        
         self.objects = []
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         

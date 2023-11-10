@@ -23,10 +23,11 @@ class GraphicsEngine:
         self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
         self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
         self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
-        self.carpet_texture = Material("../assets/textures/dirtycarpet.png")
 
-        self.wall_texture = Material("../assets/textures/yellowwallpaper.jpg")
-        self.ceiling_texture = Material("../assets/textures/ceiling-tile.jpg")
+        # Changed the texture to a compressed version, might help with performance
+        self.carpet_texture = Material("../assets/textures/compressed/dirtycarpet-min.png")
+        self.wall_texture = Material("../assets/textures/compressed/yellowwallpaper-min.jpg")
+        self.ceiling_texture = Material("../assets/textures/compressed/ceiling-tile-min.jpg")
 
         self.teefy_texture = Material("../assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
