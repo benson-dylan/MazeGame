@@ -10,7 +10,7 @@ import math
 
 class GraphicsEngine:
 
-    def __init__(self):
+    def __init__(self, numLights):
         # self.cube_mesh = CubeWallMesh()
         self.rayman = Mesh("../assets/models/raymanModel.obj")
         self.square = Mesh("../assets/models/square.obj")
@@ -34,7 +34,7 @@ class GraphicsEngine:
         
         self.light_texture = Material("../assets/textures/lightbulb.png")
         self.light_billboard = BillBoard(w=0.2, h=0.2)
-
+        self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
 
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
@@ -44,24 +44,25 @@ class GraphicsEngine:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glUseProgram(self.shader.shader)
         glUniform1i(glGetUniformLocation(self.shader.shader, "imageTexture"), 0)
+        glUniform1i(self.num_light_loc, numLights)
 
         projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
 
-        # self.lightLocation = {
-        #     "position":[
-        #         glGetUniformLocation(self.shader.shader, f"Lights[{i}].position")
-        #         for i in range(4)
-        #     ],
-        #     "color": [
-        #         glGetUniformLocation(self.shader.shader, f"Lights[{i}].color")
-        #         for i in range(4)
-        #     ],
-        #     "intensity": [
-        #         glGetUniformLocation(self.shader.shader, f"Lights[{i}].intensity")
-        #         for i in range(4)
-        #     ],
-        # }
+        self.lightLocation = {
+            "position":[
+                glGetUniformLocation(self.shader.shader, f"Lights[{i}].position")
+                for i in range(numLights)
+            ],
+            "color": [
+                glGetUniformLocation(self.shader.shader, f"Lights[{i}].color")
+                for i in range(numLights)
+            ],
+            "intensity": [
+                glGetUniformLocation(self.shader.shader, f"Lights[{i}].intensity")
+                for i in range(numLights)
+            ],
+        }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
 
         glUseProgram(self.light_shader.shader)

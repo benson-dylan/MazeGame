@@ -50,18 +50,18 @@ class Scene:
         print("Player Location", self.player_x, self.player_y)
         print("Exit Location", self.exit_x, self.exit_y)
 
-        self.teefys = [
-            SimpleComponent(
-                position= [2,2,0],
-                eulers= [0,0,0],
-                size=0
-            ),
-            SimpleComponent(
-                position= [5,2,2],
-                eulers= [0,0,0],
-                size=0
-            ),
-        ]
+        # self.teefys = [
+        #     SimpleComponent(
+        #         position= [2,2,0],
+        #         eulers= [0,0,0],
+        #         size=0
+        #     ),
+        #     SimpleComponent(
+        #         position= [5,2,2],
+        #         eulers= [0,0,0],
+        #         size=0
+        #     ),
+        # ]
 
         '''
         Generate the walls, floors, and ceiling
@@ -69,6 +69,7 @@ class Scene:
         self.floors = []
         self.ceilings = []
         self.walls = []
+        self.lights = []
 
         self.renderMaze()
 
@@ -77,9 +78,7 @@ class Scene:
         # Player
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
-        self.lights = [
         
-        ]
 
         # Play the ambient sound
         self.sound = Sound()
@@ -100,6 +99,8 @@ class Scene:
                 print("No clear spawn location found. Please check your maze configuration.")
 
     def renderMaze(self):
+        count = 0
+        
         for i in range(len(self.maze)):
             for j in range(len(self.maze[i])):
                 # Render a wall
@@ -138,10 +139,21 @@ class Scene:
                     self.ceilings.append(
                         SimpleComponent(
                             position=[x_position, 5, z_position],
-                            eulers= [0, 0, 0],
+                            eulers= [0, 0 ,0],
                             size=0
                         )
-                    )  
+                    )
+
+                    # Lights
+                    self.lights.append(
+                        Light(
+                            position=[x_position, 3, z_position],
+                            color= [0.8, 0.7, 0.4],
+                            intensity= 3
+                        )
+                    ) 
+
+                    # count += 1  
 
     def update(self, rate):
     
@@ -244,8 +256,8 @@ class App:
     def __init__(self, window):
         
         self.window = window
-        self.renderer = GraphicsEngine()
         self.scene = Scene()
+        self.renderer = GraphicsEngine(len(self.scene.lights))
 
         self.lastTime = glfw.get_time()
         self.currentTime = 0
