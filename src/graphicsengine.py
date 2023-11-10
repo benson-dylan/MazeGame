@@ -102,15 +102,15 @@ class GraphicsEngine:
             glDrawArrays(GL_TRIANGLES, 0, self.wall_mesh.n_vertices)
         
 
-        self.rayman_texture.use()
-        for object in scene.objects:
-            model_transforms = pyrr.matrix44.create_identity(np.float32)
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(object.eulers), dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(-self.rayman.center + object.position, dtype=np.float32))
-            model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.rayman.scale, dtype=np.float32))
-            self.shader["model_matrix"] = model_transforms
-            glBindVertexArray(self.rayman.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
+        # self.rayman_texture.use()
+        # for object in scene.objects:
+        #     model_transforms = pyrr.matrix44.create_identity(np.float32)
+        #     model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_eulers(np.radians(object.eulers), dtype=np.float32))
+        #     model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(-self.rayman.center + object.position, dtype=np.float32))
+        #     model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.rayman.scale, dtype=np.float32))
+        #     self.shader["model_matrix"] = model_transforms
+        #     glBindVertexArray(self.rayman.vao)
+        #     glDrawArrays(GL_TRIANGLES, 0, self.rayman.n_vertices)
 
         self.carpet_texture.use()
         for floor in scene.floors:
@@ -279,39 +279,42 @@ class CubeMesh:
 # CUBE WALL
 class CubeWallMesh:
     def __init__(self):
-        # x, y, z, s, t
+        # x, y, z, s, t, n
         self.vertices = (
-            -2.5, -2.5, -2.5, 0, 0,
-             2.5, -2.5, -2.5, 1, 0,
-             2.5,  2.5, -2.5, 1, 1,
+            #Front Face
+            -2.5, -2.5, -2.5, 0, 0, 0, 0, -1,
+             2.5, -2.5, -2.5, 1, 0, 0, 0, -1,
+             2.5,  2.5, -2.5, 1, 1, 0, 0, -1,
 
-             2.5,  2.5, -2.5, 1, 1,
-            -2.5,  2.5, -2.5, 0, 1,
-            -2.5, -2.5, -2.5, 0, 0,
+             2.5,  2.5, -2.5, 1, 1, 0, 0, -1,
+            -2.5,  2.5, -2.5, 0, 1, 0, 0, -1,
+            -2.5, -2.5, -2.5, 0, 0, 0, 0, -1,
 
-            -2.5, -2.5,  2.5, 0, 0,
-             2.5, -2.5,  2.5, 1, 0,
-             2.5,  2.5,  2.5, 1, 1,
+            #Back Face
+            -2.5, -2.5,  2.5, 0, 0, 0, 0,  1,
+             2.5, -2.5,  2.5, 1, 0, 0, 0,  1,
+             2.5,  2.5,  2.5, 1, 1, 0, 0,  1,
 
-             2.5,  2.5,  2.5, 1, 1,
-            -2.5,  2.5,  2.5, 0, 1,
-            -2.5, -2.5,  2.5, 0, 0,
+             2.5,  2.5,  2.5, 1, 1, 0, 0,  1,
+            -2.5,  2.5,  2.5, 0, 1, 0, 0,  1,
+            -2.5, -2.5,  2.5, 0, 0, 0, 0,  1,
 
-            -2.5,  2.5,  2.5, 1, 0,
-            -2.5,  2.5, -2.5, 1, 1,
-            -2.5, -2.5, -2.5, 0, 1,
+            #Left Face
+            -2.5,  2.5,  2.5, 1, 0, -1, 0, 0,
+            -2.5,  2.5, -2.5, 1, 1, -1, 0, 0,
+            -2.5, -2.5, -2.5, 0, 1, -1, 0, 0,
 
-            -2.5, -2.5, -2.5, 0, 1,
-            -2.5, -2.5,  2.5, 0, 0,
-            -2.5,  2.5,  2.5, 1, 0,
+            -2.5, -2.5, -2.5, 0, 1, -1, 0, 0,
+            -2.5, -2.5,  2.5, 0, 0, -1, 0, 0,
+            -2.5,  2.5,  2.5, 1, 0, -1, 0, 0,
+            #Right Face
+             2.5,  2.5,  2.5, 1, 0, 1, 0, 0,
+             2.5,  2.5, -2.5, 1, 1, 1, 0, 0,
+             2.5, -2.5, -2.5, 0, 1, 1, 0, 0,
 
-             2.5,  2.5,  2.5, 1, 0,
-             2.5,  2.5, -2.5, 1, 1,
-             2.5, -2.5, -2.5, 0, 1,
-
-             2.5, -2.5, -2.5, 0, 1,
-             2.5, -2.5,  2.5, 0, 0,
-             2.5,  2.5,  2.5, 1, 0,
+             2.5, -2.5, -2.5, 0, 1, 1, 0, 0,
+             2.5, -2.5,  2.5, 0, 0, 1, 0, 0,
+             2.5,  2.5,  2.5, 1, 0, 1, 0, 0,
         )
 
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -323,9 +326,11 @@ class CubeWallMesh:
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
         glEnableVertexAttribArray(0)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(2)
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
         
 
     def destroy(self):
