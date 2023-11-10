@@ -40,7 +40,7 @@ class Scene:
 
     def __init__(self) -> None:
         self.maze_size = 10
-        self.walls = []
+        
         self.cube_size = 5.0
         self.wall_height = 2.5
 
@@ -64,54 +64,17 @@ class Scene:
         ]
 
         '''
-        Generate the walls
+        Generate the walls, floors, and ceiling
         '''
-        for i in range(len(self.maze)):
-            for j in range(len(self.maze[i])):
-                if self.maze[i][j] == 1:
-                    x = j * self.cube_size
-                    y = self.wall_height
-                    z = i * self.cube_size
-                    wall_size = [self.cube_size, self.wall_height, self.cube_size]
-                    wall_component = SimpleComponent(
-                        position=[x, y, z],
-                        eulers=[0, 0, 0],
-                        size=wall_size
-                    )
-                    wall_component.calculate_bounding_box()
-                    self.walls.append(wall_component)
-        '''
-        Generate the floors and ceiling
-        '''
-        # Generate floors and ceilings for the maze
         self.floors = []
         self.ceilings = []
+        self.walls = []
 
-        for i in range(len(self.maze)):
-            for j in range(len(self.maze[i])):
-                if self.maze[i][j] == 0:
-                    x_position = j * 5
-                    z_position = i * 5
+        self.renderMaze()
 
-                    # Floor
-                    self.floors.append(
-                        SimpleComponent(
-                            position=[x_position, 0, z_position],
-                            eulers= [0, 0, 0],
-                            size=0
-                        )
-                    )
-
-                    # Ceiling
-                    self.ceilings.append(
-                        SimpleComponent(
-                            position=[x_position, 5, z_position],
-                            eulers= [0, 0, 0],
-                            size=0
-                        )
-                    )    
-                        
         self.objects = []
+        
+        # Player
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
         self.lights = [
@@ -136,8 +99,52 @@ class Scene:
             else:
                 print("No clear spawn location found. Please check your maze configuration.")
 
-    def update(self, rate):
+    def renderMaze(self):
+        for i in range(len(self.maze)):
+            for j in range(len(self.maze[i])):
+                # Render a wall
+                if self.maze[i][j] == 1:
+                    # Wall position, and height
+                    x = j * self.cube_size
+                    y = self.wall_height
+                    z = i * self.cube_size
 
+                    wall_size = [self.cube_size, self.wall_height, self.cube_size]
+
+                    wall_component = SimpleComponent(
+                        position=[x, y, z],
+                        eulers=[0, 0, 0],
+                        size=wall_size
+                    )
+
+                    wall_component.calculate_bounding_box()
+                    self.walls.append(wall_component)
+                
+                # Render floor and ceiling
+                elif self.maze[i][j] == 0:
+                    x_position = j * 5
+                    z_position = i * 5
+
+                    # Floor
+                    self.floors.append(
+                        SimpleComponent(
+                            position=[x_position, 0, z_position],
+                            eulers= [0, 0, 0],
+                            size=0
+                        )
+                    )
+
+                    # Ceiling
+                    self.ceilings.append(
+                        SimpleComponent(
+                            position=[x_position, 5, z_position],
+                            eulers= [0, 0, 0],
+                            size=0
+                        )
+                    )  
+
+    def update(self, rate):
+    
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
