@@ -1,3 +1,4 @@
+import time
 from OpenGL.GL import *
 import numpy as np
 import pyrr
@@ -29,7 +30,7 @@ class GraphicsEngine:
         self.wall_texture = Material("../assets/textures/compressed/yellowwallpaper-min.jpg")
         self.ceiling_texture = Material("../assets/textures/compressed/ceiling-tile-min.jpg")
 
-        # Enemy
+        # Enemy 
         self.enemy_texture_1 = Material("../assets/textures/enemy/45.png")
         self.enemy_texture_2 = Material("../assets/textures/enemy/46.png")
         self.enemy_texture_3 = Material("../assets/textures/enemy/47.png")
@@ -157,8 +158,12 @@ class GraphicsEngine:
         #     glBindVertexArray(self.teefy_billboard.vao)
         #     glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
 
-        # ENEMY
-        self.enemy_texture_1.use()
+        ''' Enemy '''
+        # Loop through the animation
+        current_texture_index = int((time.time() % 1) // 0.25) + 1  # Change textures every 0.25 seconds
+        current_texture_index = (current_texture_index - 1) % 4 + 1  # Ensure it stays within the range [1, 4]
+        current_texture = getattr(self, f"enemy_texture_{current_texture_index}")
+        current_texture.use()
         for enemy in scene.enemies:
             teefy_position = np.array(enemy.position)
             player_position = np.array(scene.player.position)
