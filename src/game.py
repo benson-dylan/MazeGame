@@ -41,8 +41,11 @@ def initialize_glfw():
 class Scene:
 
     def __init__(self) -> None:
-        self.maze_size = 10
+        # Enemy
+        self.start_moving = False
         
+        # Maze
+        self.maze_size = 10
         self.cube_size = 5.0
         self.wall_height = 2.5
 
@@ -81,13 +84,13 @@ class Scene:
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
         # Enemy
-        self.enemy = Enemy([self.player_y * 5, 2 , self.player_x * 5])
+        self.enemy = Enemy([self.player_y * 5, 0 , self.player_x * 5])
         self.enemy.position = self.find_clear_spawn()
-        self.teefys = [
+        self.enemies = [
             SimpleComponent(
                 position=self.enemy.position,
                 eulers= [0,0,0],
-                size=0
+                size=8
             )
         ]
         
@@ -168,7 +171,8 @@ class Scene:
                     # count += 1  
 
     def update(self, rate):
-        self.teefys[0].position = self.enemy.position
+        self.move_enemy_towards_player()
+        self.enemies[0].position = self.enemy.position
 
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
@@ -225,7 +229,6 @@ class Scene:
         overlap_z = (wall_min[2] < player_max[2]) and (player_min[2] < wall_max[2])
         return overlap_x and overlap_y and overlap_z
 
-    
     def move_player(self, dPos):
         dPos = np.array(dPos, dtype=np.float32)
         for axis in range(3):
@@ -262,23 +265,33 @@ class Scene:
 
         self.player.update_vectors()
 
-    def move_enemy(self, dPos):
-        dPos = np.array(dPos, dtype=np.float32)
-        for axis in range(3):
-            new_position = self.enemy.position.copy()
-            new_position[axis] += dPos[axis]
-            player_min_corner, player_max_corner = self.enemy.get_bounding_box_at_position(new_position)
-            collision = False
-            for wall in self.walls: 
-                if self.check_collision(player_min_corner, player_max_corner, wall.min_corner, wall.max_corner):
-                    print("enemy collision detected")
-                    collision = True
-                    dPos[axis] = 0
-                    break
-            if not collision:
-                self.enemy.position[axis] += dPos[axis]
-        if np.any(dPos):
-            self.update_footsteps()
+    def move_enemy_towards_player(self):
+        if self.start_moving == True: 
+            player_position = np.array(self.player.position, dtype=np.float32)
+            enemy_position = np.array(self.enemy.position, dtype=np.float32)
+
+            direction_to_player = player_position - enemy_position
+
+            for axis in range(3):
+                if axis == 1:  # Skip the y-axis
+                    continue
+
+                step_size = 0.005 # ENEMY MOVEMENT SPEED
+                temp_position = enemy_position.copy()
+                temp_position[axis] += direction_to_player[axis] * step_size
+
+                player_min_corner, player_max_corner = self.enemy.get_bounding_box_at_position(temp_position)
+
+                collision = any(
+                    self.check_collision(player_min_corner, player_max_corner, wall.min_corner, wall.max_corner)
+                    for wall in self.walls
+                )
+
+                if not collision:
+                    enemy_position[axis] += direction_to_player[axis] * step_size
+
+            self.enemy.position = enemy_position
+
 class App:
 
     def __init__(self, window):
@@ -337,7 +350,6 @@ class App:
         self.quit()
 
     def handleKeys(self):
-
         combo = 0
         directionModifier = 0
         runBoost = 1
@@ -366,8 +378,11 @@ class App:
                 0,
                 self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk
             ]
+            self.scene.start_moving = True
             self.scene.move_player(dPos)
-            self.scene.move_enemy(dPos)
+            
+            
+            #self.scene.move_enemy(dPos)
             
         
         

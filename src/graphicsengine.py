@@ -29,6 +29,13 @@ class GraphicsEngine:
         self.wall_texture = Material("../assets/textures/compressed/yellowwallpaper-min.jpg")
         self.ceiling_texture = Material("../assets/textures/compressed/ceiling-tile-min.jpg")
 
+        # Enemy
+        self.enemy_texture_1 = Material("../assets/textures/enemy/45.png")
+        self.enemy_texture_2 = Material("../assets/textures/enemy/46.png")
+        self.enemy_texture_3 = Material("../assets/textures/enemy/47.png")
+        self.enemy_texture_4 = Material("../assets/textures/enemy/48.png")
+        self.enemy_billboard = BillBoard(w=0.5, h=0.5)
+
         self.teefy_texture = Material("../assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
         
@@ -151,9 +158,9 @@ class GraphicsEngine:
         #     glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
 
         # ENEMY
-        self.teefy_texture.use()
-        for teefy in scene.teefys:
-            teefy_position = np.array(teefy.position)
+        self.enemy_texture_1.use()
+        for enemy in scene.enemies:
+            teefy_position = np.array(enemy.position)
             player_position = np.array(scene.player.position)
 
             direction_from_player = teefy_position - player_position
@@ -162,13 +169,18 @@ class GraphicsEngine:
             angle2 = np.arctan2(direction_from_player[1], dist2d)
 
             model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+
+            # Adjust the scaling factor to increase the size of the texture
+            scaling_factor = enemy.size  # You can adjust this value as needed
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32), dtype=np.float32))
+
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy_position, dtype=np.float32))
 
             self.shader["model_matrix"] = model_transform
-            glBindVertexArray(self.teefy_billboard.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
+            glBindVertexArray(self.enemy_billboard.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.enemy_billboard.n_vertices)
 
         glUseProgram(self.light_shader.shader)
 
