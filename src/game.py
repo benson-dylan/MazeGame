@@ -42,7 +42,7 @@ class Scene:
 
     def __init__(self) -> None:
         # Enemy
-        self.start_moving = False
+        self.start_moving = True
         
         # Maze
         self.maze_size = 10
@@ -173,7 +173,8 @@ class Scene:
     def update(self, rate):
         self.move_enemy_towards_player()
         self.enemies[0].position = self.enemy.position
-
+        if self.check_enemy_player_collision():
+            print("You died!")
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
@@ -183,11 +184,8 @@ class Scene:
                 teefy.position[1] += 100 """
         
     def check_immediate_collisions(self):
-        # Get the bounding box for the player
         player_min_corner, player_max_corner = self.player.get_bounding_box()
-        print(f"Player Bounding Box: Min {player_min_corner}, Max {player_max_corner}")  # Debug print
-
-        # Iterate over all wall components to check for collision
+        print(f"Player Bounding Box: Min {player_min_corner}, Max {player_max_corner}")
         for wall in self.walls:
             wall_min_corner = wall.min_corner
             wall_max_corner = wall.max_corner
@@ -222,6 +220,12 @@ class Scene:
             if self.check_collision(player_min_corner, player_max_corner, wall_min_corner, wall_max_corner):
                 return True
         return False
+    
+    def check_enemy_player_collision(self):
+        enemy_min_corner, enemy_max_corner = self.enemy.get_bounding_box()
+        player_min_corner, player_max_corner = self.player.get_bounding_box()
+
+        return self.check_collision(enemy_min_corner, enemy_max_corner, player_min_corner, player_max_corner)
     
     def check_collision(self, player_min, player_max, wall_min, wall_max):
         overlap_x = (wall_min[0] < player_max[0]) and (player_min[0] < wall_max[0])

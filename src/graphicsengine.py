@@ -20,21 +20,21 @@ class GraphicsEngine:
         self.wall_mesh = CubeWallMesh() 
 
         self.ceiling = Ceiling(w=10.0, h=10.0)
-        self.wood_texture = Material("../assets/textures/wood.png")
-        self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
-        self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
-        self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
+        self.wood_texture = Material("assets/textures/wood.png")
+        self.rayman_texture = Material("assets/textures/raymanModel.png", "rayman")
+        self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
+        self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
 
         # Changed the texture to a compressed version, might help with performance
-        self.carpet_texture = Material("../assets/textures/compressed/dirtycarpet-min.png")
-        self.wall_texture = Material("../assets/textures/compressed/yellowwallpaper-min.jpg")
-        self.ceiling_texture = Material("../assets/textures/compressed/ceiling-tile-min.jpg")
+        self.carpet_texture = Material("assets/textures/compressed/dirtycarpet-min.png")
+        self.wall_texture = Material("assets/textures/compressed/yellowwallpaper-min.jpg")
+        self.ceiling_texture = Material("assets/textures/compressed/ceiling-tile-min.jpg")
 
         # Enemy 
-        self.enemy_texture_1 = Material("../assets/textures/enemy/45.png")
-        self.enemy_texture_2 = Material("../assets/textures/enemy/46.png")
-        self.enemy_texture_3 = Material("../assets/textures/enemy/47.png")
-        self.enemy_texture_4 = Material("../assets/textures/enemy/48.png")
+        self.enemy_texture_1 = Material("assets/textures/enemy/45.png")
+        self.enemy_texture_2 = Material("assets/textures/enemy/46.png")
+        self.enemy_texture_3 = Material("assets/textures/enemy/47.png")
+        self.enemy_texture_4 = Material("assets/textures/enemy/48.png")
         self.enemy_billboard = BillBoard(w=0.5, h=0.5)
 
         self.teefy_texture = Material("assets/textures/teefy.png")
