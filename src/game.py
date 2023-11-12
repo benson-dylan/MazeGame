@@ -1,5 +1,6 @@
 import time
 import time
+
 import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
@@ -14,6 +15,7 @@ from sound import Sound
 import pygame as pg
 
 from mazeGenerator import MazeGenerator
+from enemy import Enemy
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -39,8 +41,11 @@ def initialize_glfw():
 class Scene:
 
     def __init__(self) -> None:
+        # Enemy
+        self.start_moving = False
+        
+        # Maze
         self.maze_size = 10
-        self.walls = []
         self.cube_size = 5.0
         self.wall_height = 2.5
 
@@ -50,86 +55,45 @@ class Scene:
         print("Player Location", self.player_x, self.player_y)
         print("Exit Location", self.exit_x, self.exit_y)
 
-        self.teefys = [
-            SimpleComponent(
-                position= [2,2,0],
-                eulers= [0,0,0],
-                size=0
-            ),
-            SimpleComponent(
-                position= [5,2,2],
-                eulers= [0,0,0],
-                size=0
-            ),
-        ]
+        # self.teefys = [
+        #     SimpleComponent(
+        #         position= [2,2,0],
+        #         eulers= [0,0,0],
+        #         size=0
+        #     ),
+        #     SimpleComponent(
+        #         position= [5,2,2],
+        #         eulers= [0,0,0],
+        #         size=0
+        #     ),
+        # ]
 
         '''
-        Generate the walls
+        Generate the walls, floors, and ceiling
         '''
-        for i in range(len(self.maze)):
-            for j in range(len(self.maze[i])):
-                if self.maze[i][j] == 1:
-                    x = j * self.cube_size
-                    y = self.wall_height / 2
-                    z = i * self.cube_size
-                    wall_size = [self.cube_size, self.wall_height, self.cube_size]
-                    wall_component = SimpleComponent(
-                        position=[x, y, z],
-                        eulers=[0, 0, 0],
-                        size=wall_size
-            )
-                    wall_component.calculate_bounding_box()
-                    self.walls.append(wall_component)
-        '''
-        Generate the floors
-        '''
-        # Define the dimensions of the maze
-        maze_height = len(self.maze)
-        maze_width = len(self.maze[0])
-
-        # Generate floors for the maze
         self.floors = []
-
-        for row in range(maze_height):
-            for col in range(maze_width):
-                # Multiply the x and y positions by 5 to create the floor
-                x_position = col * 5
-                z_position = row * 5
-
-                self.floors.append(
-                    SimpleComponent(
-                        position=[x_position, 0, z_position],
-                        eulers= [0, 0, 0],
-                        size=0
-                    )
-                )
-                    
-       
-        '''
-        Generate the ceilings
-        '''
         self.ceilings = []
-        for row in range(maze_height):
-            for col in range(maze_width):
-                # Multiply the x and y positions by 5 to create the floor
-                x_position = col * 5
-                z_position = row * 5
+        self.walls = []
+        self.lights = []
 
-                self.ceilings.append(
-                    SimpleComponent(
-                        position=[x_position, 5, z_position],
-                        eulers= [0, 0, 0],
-                        size=0
-                    )
-                )
+        self.renderMaze()
 
-        
         self.objects = []
+        
+        # Player
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
-        self.lights = [
-        
+        # Enemy
+        self.enemy = Enemy([self.player_y * 5, 0 , self.player_x * 5])
+        self.enemy.position = self.find_clear_spawn()
+        self.enemies = [
+            SimpleComponent(
+                position=self.enemy.position,
+                eulers= [0,0,0],
+                size=8
+            )
         ]
+        
 
         # Play the ambient sound
         self.sound = Sound()
@@ -149,12 +113,66 @@ class Scene:
             else:
                 print("No clear spawn location found. Please check your maze configuration.")
 
-    def update(self, rate):
+    def renderMaze(self):
+        count = 0
         
-        for object in self.objects:
-            object.eulers[2] += 0.25 * rate
-            if object.eulers[2] > 360:
-                object.eulers[2] -= 360
+        for i in range(len(self.maze)):
+            for j in range(len(self.maze[i])):
+                # Render a wall
+                if self.maze[i][j] == 1:
+                    # Wall position, and height
+                    x = j * self.cube_size
+                    y = self.wall_height
+                    z = i * self.cube_size
+
+                    wall_size = [self.cube_size, self.wall_height, self.cube_size]
+
+                    wall_component = SimpleComponent(
+                        position=[x, y, z],
+                        eulers=[0, 0, 0],
+                        size=wall_size
+                    )
+
+                    wall_component.calculate_bounding_box()
+                    self.walls.append(wall_component)
+                
+                # Render floor and ceiling
+                elif self.maze[i][j] == 0:
+                    x_position = j * 5
+                    z_position = i * 5
+
+                    # Floor
+                    self.floors.append(
+                        SimpleComponent(
+                            position=[x_position, 0, z_position],
+                            eulers= [0, 0, 0],
+                            size=0
+                        )
+                    )
+
+                    # Ceiling
+                    self.ceilings.append(
+                        SimpleComponent(
+                            position=[x_position, 5, z_position],
+                            eulers= [0, 0 ,0],
+                            size=0
+                        )
+                    )
+
+                    # Lights
+                    self.lights.append(
+                        Light(
+                            position=[x_position, 3, z_position],
+                            color= [0.8, 0.7, 0.4],
+                            intensity= 3
+                        )
+                    ) 
+
+                    # count += 1  
+
+    def update(self, rate):
+        self.move_enemy_towards_player()
+        self.enemies[0].position = self.enemy.position
 
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
@@ -211,7 +229,6 @@ class Scene:
         overlap_z = (wall_min[2] < player_max[2]) and (player_min[2] < wall_max[2])
         return overlap_x and overlap_y and overlap_z
 
-    
     def move_player(self, dPos):
         dPos = np.array(dPos, dtype=np.float32)
         for axis in range(3):
@@ -236,8 +253,6 @@ class Scene:
             self.play(self.sound.player_move)
             self.last_footstep_time = current_time
 
-
-
     def spin_player(self, dTheta, dPhi):
 
         self.player.theta += dTheta
@@ -250,13 +265,40 @@ class Scene:
 
         self.player.update_vectors()
 
+    def move_enemy_towards_player(self):
+        if self.start_moving == True: 
+            player_position = np.array(self.player.position, dtype=np.float32)
+            enemy_position = np.array(self.enemy.position, dtype=np.float32)
+
+            direction_to_player = player_position - enemy_position
+
+            for axis in range(3):
+                if axis == 1:  # Skip the y-axis
+                    continue
+
+                step_size = 0.005 # ENEMY MOVEMENT SPEED
+                temp_position = enemy_position.copy()
+                temp_position[axis] += direction_to_player[axis] * step_size
+
+                player_min_corner, player_max_corner = self.enemy.get_bounding_box_at_position(temp_position)
+
+                collision = any(
+                    self.check_collision(player_min_corner, player_max_corner, wall.min_corner, wall.max_corner)
+                    for wall in self.walls
+                )
+
+                if not collision:
+                    enemy_position[axis] += direction_to_player[axis] * step_size
+
+            self.enemy.position = enemy_position
+
 class App:
 
     def __init__(self, window):
         
         self.window = window
-        self.renderer = GraphicsEngine()
         self.scene = Scene()
+        self.renderer = GraphicsEngine(len(self.scene.lights))
 
         self.lastTime = glfw.get_time()
         self.currentTime = 0
@@ -308,7 +350,6 @@ class App:
         self.quit()
 
     def handleKeys(self):
-
         combo = 0
         directionModifier = 0
         runBoost = 1
@@ -337,7 +378,11 @@ class App:
                 0,
                 self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk
             ]
+            self.scene.start_moving = True
             self.scene.move_player(dPos)
+            
+            
+            #self.scene.move_enemy(dPos)
             
         
         
@@ -362,10 +407,6 @@ class App:
             self.numFrames = -1
             self.frameTime = float(1000.0/max(1, framerate))
         self.numFrames += 1
-
-    def checkCollision(self, move_direction, walls):
-        for wall in self.scene.walls:
-            pass
 
 
     def quit(self):
