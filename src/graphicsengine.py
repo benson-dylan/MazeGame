@@ -150,6 +150,26 @@ class GraphicsEngine:
         #     glBindVertexArray(self.teefy_billboard.vao)
         #     glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
 
+        # ENEMY
+        self.teefy_texture.use()
+        for teefy in scene.teefys:
+            teefy_position = np.array(teefy.position)
+            player_position = np.array(scene.player.position)
+
+            direction_from_player = teefy_position - player_position
+            angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
+            dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
+            angle2 = np.arctan2(direction_from_player[1], dist2d)
+
+            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy_position, dtype=np.float32))
+
+            self.shader["model_matrix"] = model_transform
+            glBindVertexArray(self.teefy_billboard.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
+
         glUseProgram(self.light_shader.shader)
 
         self.light_shader["view_matrix"] = view_transforms

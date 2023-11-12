@@ -1,5 +1,6 @@
 import time
 import time
+
 import glfw
 import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
@@ -14,6 +15,7 @@ from sound import Sound
 import pygame as pg
 
 from mazeGenerator import MazeGenerator
+from enemy import Enemy
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -78,6 +80,16 @@ class Scene:
         # Player
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
+        # Enemy
+        self.enemy = Enemy([self.player_y * 5, 2 , self.player_x * 5])
+        self.enemy.position = self.find_clear_spawn()
+        self.teefys = [
+            SimpleComponent(
+                position=self.enemy.position,
+                eulers= [0,0,0],
+                size=0
+            )
+        ]
         
 
         # Play the ambient sound
@@ -156,7 +168,8 @@ class Scene:
                     # count += 1  
 
     def update(self, rate):
-    
+        self.teefys[0].position = self.enemy.position
+
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
@@ -237,8 +250,6 @@ class Scene:
             self.play(self.sound.player_move)
             self.last_footstep_time = current_time
 
-
-
     def spin_player(self, dTheta, dPhi):
 
         self.player.theta += dTheta
@@ -251,6 +262,23 @@ class Scene:
 
         self.player.update_vectors()
 
+    def move_enemy(self, dPos):
+        dPos = np.array(dPos, dtype=np.float32)
+        for axis in range(3):
+            new_position = self.enemy.position.copy()
+            new_position[axis] += dPos[axis]
+            player_min_corner, player_max_corner = self.enemy.get_bounding_box_at_position(new_position)
+            collision = False
+            for wall in self.walls: 
+                if self.check_collision(player_min_corner, player_max_corner, wall.min_corner, wall.max_corner):
+                    print("enemy collision detected")
+                    collision = True
+                    dPos[axis] = 0
+                    break
+            if not collision:
+                self.enemy.position[axis] += dPos[axis]
+        if np.any(dPos):
+            self.update_footsteps()
 class App:
 
     def __init__(self, window):
@@ -339,6 +367,7 @@ class App:
                 self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk
             ]
             self.scene.move_player(dPos)
+            self.scene.move_enemy(dPos)
             
         
         
