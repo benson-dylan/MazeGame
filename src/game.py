@@ -6,7 +6,8 @@ import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
 import numpy as np
 import random
-
+import pygame
+import sys
 
 from player import Player
 from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
@@ -414,10 +415,12 @@ class App:
 
 
     def quit(self):
-        self.renderer.quit()       
+        self.renderer.quit()
+
+
+
 
 if __name__ == "__main__":
     window = initialize_glfw()
     myApp = App(window)
-
 
