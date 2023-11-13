@@ -48,14 +48,13 @@ class Scene:
         self.start_moving = True
         
         # Maze
-        self.maze_size = 10
+        self.maze_size = 5
         self.cube_size = 5.0
         self.wall_height = 2.5
 
-        self.mazeGenerator = MazeGenerator(self.maze_size)
-        self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
-        #print(self.maze)
-        print("Player Location", self.player_x, self.player_y)
+        self.mazeGenerator = MazeGenerator()
+        self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze(self.maze_size)
+        print(self.maze)
         print("Exit Location", self.exit_x, self.exit_y)
 
         # self.teefys = [
@@ -72,12 +71,6 @@ class Scene:
         # ]
 
         # Generate the maze as an array
-        m = Maze()
-        m.generator = Prims(5, 5)
-        m.generate()
-        maze_str = str(m)
-        maze_2d_array = [[1 if cell == '#' else 0 for cell in row] for row in maze_str.split('\n') if row.strip()]
-        self.maze = maze_2d_array
 
         '''
         Generate the walls, floors, and ceiling
