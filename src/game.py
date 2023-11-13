@@ -80,21 +80,35 @@ class Scene:
 
         self.objects = []
         
+
+        self.portal = SimpleComponent(
+            position= [self.exit_x * 5, 2, self.exit_y * 5],
+            eulers= [0,0,0],
+            size=8
+        )
+        self.lights.append(
+            Light(
+                position=[self.exit_x * 5, 2, self.exit_y * 5],
+                color= [0.8, 0.7, 0.4],
+                intensity= 8
+            )
+        ) 
+        
+        
         # Player
         self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         
         # Enemy
-        self.enemy = Enemy([self.player_y * 5, 0 , self.player_x * 5])
+        self.enemy = Enemy([0, 0, 0])
         self.enemy.position = self.find_clear_spawn()
         self.enemies = [
             SimpleComponent(
                 position=self.enemy.position,
                 eulers= [0,0,0],
-                size=8
+                size=5
             )
         ]
         
-
         # Play the ambient sound
         self.sound = Sound()
         pg.mixer.music.play(-1)
@@ -162,7 +176,7 @@ class Scene:
                     # Lights
                     self.lights.append(
                         Light(
-                            position=[x_position, 3, z_position],
+                            position=[x_position, 3.5, z_position],
                             color= [0.8, 0.7, 0.4],
                             intensity= 3
                         )
@@ -173,8 +187,10 @@ class Scene:
     def update(self, rate):
         self.move_enemy_towards_player()
         self.enemies[0].position = self.enemy.position
+
         if self.check_enemy_player_collision():
             print("You died!")
+
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
