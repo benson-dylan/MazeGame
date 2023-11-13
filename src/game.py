@@ -17,6 +17,9 @@ import pygame as pg
 from mazeGenerator import MazeGenerator
 from enemy import Enemy
 
+from mazelib import Maze
+from mazelib.generate.Prims import Prims
+
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 RETURN_ACTION_CONTINUE = 0
@@ -51,7 +54,7 @@ class Scene:
 
         self.mazeGenerator = MazeGenerator(self.maze_size)
         self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
-        print(self.maze)
+        #print(self.maze)
         print("Player Location", self.player_x, self.player_y)
         print("Exit Location", self.exit_x, self.exit_y)
 
@@ -67,6 +70,14 @@ class Scene:
         #         size=0
         #     ),
         # ]
+
+        # Generate the maze as an array
+        m = Maze()
+        m.generator = Prims(5, 5)
+        m.generate()
+        maze_str = str(m)
+        maze_2d_array = [[1 if cell == '#' else 0 for cell in row] for row in maze_str.split('\n') if row.strip()]
+        self.maze = maze_2d_array
 
         '''
         Generate the walls, floors, and ceiling
@@ -96,8 +107,17 @@ class Scene:
         
         
         # Player
-        self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
-        
+        self.player = Player([0, 0, 0])
+
+        if self.check_immediate_collisions():
+            print("Collision detected at the start position! Finding a new spawn location.")
+            new_spawn_position = self.find_clear_spawn()
+            if new_spawn_position:
+                print(f"New spawn location found at: {new_spawn_position}")
+                self.player.position = new_spawn_position
+            else:
+                print("No clear spawn location found. Please check your maze configuration.")
+
         # Enemy
         self.enemy = Enemy([0, 0, 0])
         self.enemy.position = self.find_clear_spawn()
@@ -118,14 +138,6 @@ class Scene:
         self.last_footstep_time = 0
         self.footstep_delay = 0.5
 
-        if self.check_immediate_collisions():
-            print("Collision detected at the start position! Finding a new spawn location.")
-            new_spawn_position = self.find_clear_spawn()
-            if new_spawn_position:
-                print(f"New spawn location found at: {new_spawn_position}")
-                self.player.position = new_spawn_position
-            else:
-                print("No clear spawn location found. Please check your maze configuration.")
 
     def renderMaze(self):
         count = 0
