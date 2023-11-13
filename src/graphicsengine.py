@@ -13,34 +13,34 @@ class GraphicsEngine:
 
     def __init__(self, numLights):
         # self.cube_mesh = CubeWallMesh()
-        self.rayman = Mesh("assets/models/raymanModel.obj")
-        self.square = Mesh("assets/models/square.obj")
-        self.floor = Floor(w=10.0, h=10.0)
+        self.rayman = Mesh("../assets/models/raymanModel.obj")
+        self.square = Mesh("../assets/models/square.obj")
+        self.floor = Floor(w=5.0, h=5.0)
 
         self.wall_mesh = CubeWallMesh() 
 
-        self.ceiling = Ceiling(w=10.0, h=10.0)
-        self.wood_texture = Material("assets/textures/wood.png")
-        self.rayman_texture = Material("assets/textures/raymanModel.png", "rayman")
-        self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
-        self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
+        self.ceiling = Ceiling(w=5.0, h=5.0)
+        self.wood_texture = Material("../assets/textures/wood.png")
+        self.rayman_texture = Material("../assets/textures/raymanModel.png", "rayman")
+        self.shader = self.createShader("../assets/shaders/vertex.glsl", "../assets/shaders/fragment.glsl")
+        self.light_shader = self.createShader("../assets/shaders/vertex_light.glsl", "../assets/shaders/fragment_light.glsl")
 
         # Changed the texture to a compressed version, might help with performance
-        self.carpet_texture = Material("assets/textures/compressed/dirtycarpet-min.png")
-        self.wall_texture = Material("assets/textures/compressed/yellowwallpaper-min.jpg")
-        self.ceiling_texture = Material("assets/textures/compressed/ceiling-tile-min.jpg")
+        self.carpet_texture = Material("../assets/textures/compressed/dirtycarpet-min.png")
+        self.wall_texture = Material("../assets/textures/compressed/yellowwallpaper-min.jpg")
+        self.ceiling_texture = Material("../assets/textures/compressed/ceiling-tile-min.png")
 
         # Enemy 
-        self.enemy_texture_1 = Material("assets/textures/enemy/45.png")
-        self.enemy_texture_2 = Material("assets/textures/enemy/46.png")
-        self.enemy_texture_3 = Material("assets/textures/enemy/47.png")
-        self.enemy_texture_4 = Material("assets/textures/enemy/48.png")
+        self.enemy_texture_1 = Material("../assets/textures/enemy/45.png")
+        self.enemy_texture_2 = Material("../assets/textures/enemy/46.png")
+        self.enemy_texture_3 = Material("../assets/textures/enemy/47.png")
+        self.enemy_texture_4 = Material("../assets/textures/enemy/48.png")
         self.enemy_billboard = BillBoard(w=0.5, h=0.5)
 
-        self.teefy_texture = Material("assets/textures/teefy.png")
+        self.teefy_texture = Material("../assets/textures/teefy.png")
         self.teefy_billboard = BillBoard(w=0.5, h=0.5)
         
-        self.light_texture = Material("assets/textures/lightbulb.png")
+        self.light_texture = Material("../assets/textures/lightbulb.png")
         self.light_billboard = BillBoard(w=0.2, h=0.2)
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
 
@@ -187,28 +187,34 @@ class GraphicsEngine:
             glBindVertexArray(self.enemy_billboard.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.enemy_billboard.n_vertices)
 
+        # ----------------------------------------------------
+
+        self.shader["model_matrix"] = model_transform
+        glBindVertexArray(self.teefy_billboard.vao)
+        glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
+
         glUseProgram(self.light_shader.shader)
 
         self.light_shader["view_matrix"] = view_transforms
 
-        for light in scene.lights:
+        # for light in scene.lights:
             
-            self.light_texture.use()
-            glUniform3fv(self.tintLoc, 1, light.color)
+        #     self.light_texture.use()
+        #     glUniform3fv(self.tintLoc, 1, light.color)
 
-            directionFromPlayer = light.position - scene.player.position
-            angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
-            dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
-            angle2 = np.arctan2(directionFromPlayer[1], dist2d)
+        #     directionFromPlayer = light.position - scene.player.position
+        #     angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
+        #     dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
+        #     angle2 = np.arctan2(directionFromPlayer[1], dist2d)
 
-            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(light.position, dtype=np.float32))
+        #     model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(light.position, dtype=np.float32))
 
-            self.light_shader["model_matrix"] = model_transform
-            glBindVertexArray(self.light_billboard.vao)
-            glDrawArrays(GL_TRIANGLES, 0, self.light_billboard.n_vertices)
+        #     self.light_shader["model_matrix"] = model_transform
+        #     glBindVertexArray(self.light_billboard.vao)
+        #     glDrawArrays(GL_TRIANGLES, 0, self.light_billboard.n_vertices)
 
         glUniform3fv(self.tintLoc, 1, np.array([1, 1, 1], dtype=np.float32))
 

@@ -18,6 +18,9 @@ import pygame as pg
 from mazeGenerator import MazeGenerator
 from enemy import Enemy
 
+from mazelib import Maze
+from mazelib.generate.Prims import Prims
+
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 RETURN_ACTION_CONTINUE = 0
@@ -46,14 +49,13 @@ class Scene:
         self.start_moving = True
         
         # Maze
-        self.maze_size = 10
+        self.maze_size = 5
         self.cube_size = 5.0
         self.wall_height = 2.5
 
-        self.mazeGenerator = MazeGenerator(self.maze_size)
-        self.player_x, self.player_y, self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze()
+        self.mazeGenerator = MazeGenerator()
+        self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze(self.maze_size)
         print(self.maze)
-        print("Player Location", self.player_x, self.player_y)
         print("Exit Location", self.exit_x, self.exit_y)
 
         # self.teefys = [
@@ -69,6 +71,8 @@ class Scene:
         #     ),
         # ]
 
+        # Generate the maze as an array
+
         '''
         Generate the walls, floors, and ceiling
         '''
@@ -81,29 +85,23 @@ class Scene:
 
         self.objects = []
         
-        # Player
-        self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
-        
-        # Enemy
-        self.enemy = Enemy([self.player_y * 5, 0 , self.player_x * 5])
-        self.enemy.position = self.find_clear_spawn()
-        self.enemies = [
-            SimpleComponent(
-                position=self.enemy.position,
-                eulers= [0,0,0],
-                size=8
+
+        self.portal = SimpleComponent(
+            position= [self.exit_x * 5, 2, self.exit_y * 5],
+            eulers= [0,0,0],
+            size=8
+        )
+        self.lights.append(
+            Light(
+                position=[self.exit_x * 5, 2, self.exit_y * 5],
+                color= [0.8, 0.7, 0.4],
+                intensity= 8
             )
-        ]
+        ) 
         
-
-        # Play the ambient sound
-        self.sound = Sound()
-        pg.mixer.music.play(-1)
-
-        self.play = self.sound.play
-        # Initialize footstep time
-        self.last_footstep_time = 0
-        self.footstep_delay = 0.5
+        
+        # Player
+        self.player = Player([0, 2, 0])
 
         if self.check_immediate_collisions():
             print("Collision detected at the start position! Finding a new spawn location.")
@@ -113,6 +111,27 @@ class Scene:
                 self.player.position = new_spawn_position
             else:
                 print("No clear spawn location found. Please check your maze configuration.")
+
+        # Enemy
+        self.enemy = Enemy([0, 0, 0])
+        self.enemy.position = self.find_clear_spawn()
+        self.enemies = [
+            SimpleComponent(
+                position=self.enemy.position,
+                eulers= [0,0,0],
+                size=8
+            )
+        ]
+        
+        # Play the ambient sound
+        self.sound = Sound()
+        pg.mixer.music.play(-1)
+
+        self.play = self.sound.play
+        # Initialize footstep time
+        self.last_footstep_time = 0
+        self.footstep_delay = 0.5
+
 
     def renderMaze(self):
         count = 0
@@ -163,7 +182,7 @@ class Scene:
                     # Lights
                     self.lights.append(
                         Light(
-                            position=[x_position, 3, z_position],
+                            position=[x_position, 3.5, z_position],
                             color= [0.8, 0.7, 0.4],
                             intensity= 3
                         )
@@ -174,8 +193,10 @@ class Scene:
     def update(self, rate):
         self.move_enemy_towards_player()
         self.enemies[0].position = self.enemy.position
+
         if self.check_enemy_player_collision():
             print("You died!")
+
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
