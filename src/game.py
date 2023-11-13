@@ -107,7 +107,7 @@ class Scene:
         
         
         # Player
-        self.player = Player([0, 0, 0])
+        self.player = Player([0, 2, 0])
 
         if self.check_immediate_collisions():
             print("Collision detected at the start position! Finding a new spawn location.")
@@ -125,7 +125,7 @@ class Scene:
             SimpleComponent(
                 position=self.enemy.position,
                 eulers= [0,0,0],
-                size=5
+                size=8
             )
         ]
         
