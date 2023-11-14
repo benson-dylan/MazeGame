@@ -8,6 +8,8 @@ import numpy as np
 import random
 import pygame
 import sys
+import os
+import pygame.font
 
 from player import Player
 from graphicsengine import GraphicsEngine, SimpleComponent, Object, Light
@@ -17,9 +19,6 @@ import pygame as pg
 
 from mazeGenerator import MazeGenerator
 from enemy import Enemy
-
-from mazelib import Maze
-from mazelib.generate.Prims import Prims
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -71,8 +70,6 @@ class Scene:
         #     ),
         # ]
 
-        # Generate the maze as an array
-
         '''
         Generate the walls, floors, and ceiling
         '''
@@ -85,33 +82,10 @@ class Scene:
 
         self.objects = []
         
-
-        self.portal = SimpleComponent(
-            position= [self.exit_x * 5, 2, self.exit_y * 5],
-            eulers= [0,0,0],
-            size=8
-        )
-        self.lights.append(
-            Light(
-                position=[self.exit_x * 5, 2, self.exit_y * 5],
-                color= [0.8, 0.7, 0.4],
-                intensity= 8
-            )
-        ) 
-        
-        
         # Player
+        #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         self.player = Player([0, 2, 0])
-
-        if self.check_immediate_collisions():
-            print("Collision detected at the start position! Finding a new spawn location.")
-            new_spawn_position = self.find_clear_spawn()
-            if new_spawn_position:
-                print(f"New spawn location found at: {new_spawn_position}")
-                self.player.position = new_spawn_position
-            else:
-                print("No clear spawn location found. Please check your maze configuration.")
-
+        
         # Enemy
         self.enemy = Enemy([0, 0, 0])
         self.enemy.position = self.find_clear_spawn()
@@ -123,6 +97,7 @@ class Scene:
             )
         ]
         
+
         # Play the ambient sound
         self.sound = Sound()
         pg.mixer.music.play(-1)
@@ -132,6 +107,14 @@ class Scene:
         self.last_footstep_time = 0
         self.footstep_delay = 0.5
 
+        if self.check_immediate_collisions():
+            print("Collision detected at the start position! Finding a new spawn location.")
+            new_spawn_position = self.find_clear_spawn()
+            if new_spawn_position:
+                print(f"New spawn location found at: {new_spawn_position}")
+                self.player.position = new_spawn_position
+            else:
+                print("No clear spawn location found. Please check your maze configuration.")
 
     def renderMaze(self):
         count = 0
@@ -182,7 +165,7 @@ class Scene:
                     # Lights
                     self.lights.append(
                         Light(
-                            position=[x_position, 3.5, z_position],
+                            position=[x_position, 3, z_position],
                             color= [0.8, 0.7, 0.4],
                             intensity= 3
                         )
@@ -193,10 +176,8 @@ class Scene:
     def update(self, rate):
         self.move_enemy_towards_player()
         self.enemies[0].position = self.enemy.position
-
         if self.check_enemy_player_collision():
             print("You died!")
-
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
@@ -368,8 +349,8 @@ class App:
 
             glfw.poll_events()
 
-            self.scene.update(self.frameTime / 16.7)
-            self.renderer.render(self.scene)
+            self.scene.update(self.frameTime / 16.7)  # Update the game scene
+            self.renderer.render(self.scene)  # Render the game scene
 
             #Timing
             self.calculateFramerate()
@@ -382,16 +363,16 @@ class App:
         crouchWalk = 1
 
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_W) == GLFW_CONSTANTS.GLFW_PRESS:
-            combo += 1
+                combo += 1
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_A) == GLFW_CONSTANTS.GLFW_PRESS:
-            combo += 2
+                combo += 2
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_S) == GLFW_CONSTANTS.GLFW_PRESS:
-            combo += 4
+                combo += 4
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_D) == GLFW_CONSTANTS.GLFW_PRESS:
-            combo += 8
+                combo += 8
         
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_SHIFT) == GLFW_CONSTANTS.GLFW_PRESS:
-            runBoost = 1.5
+                runBoost = 1.5
         elif glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_CONTROL) == GLFW_CONSTANTS.GLFW_PRESS:
             crouchWalk = 0.5
 
@@ -400,10 +381,10 @@ class App:
         if combo in self.walk_offset_lookup:
             directionModifier = self.walk_offset_lookup[combo]
             dPos = [
-                self.speed * self.frameTime / 16.7 * np.cos(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk,
+                 self.speed * self.frameTime / 16.7 * np.cos(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk,
                 0,
                 self.speed * -self.frameTime / 16.7 * np.sin(np.deg2rad(self.scene.player.theta + directionModifier)) * runBoost * crouchWalk
-            ]
+                ]
             self.scene.start_moving = True
             self.scene.move_player(dPos)
             
@@ -438,10 +419,88 @@ class App:
     def quit(self):
         self.renderer.quit()
 
+class StartMenu:
+    def __init__(self, screen, frame_folder, font_path):  
+        self.screen = screen
+        self.frame_folder = frame_folder
+        self.frames = self.load_frames()
+        self.current_frame = 0
+        self.running = True
+        self.clock = pygame.time.Clock()
+        self.fps = 2
+        self.font_size = 60
+        self.font = pygame.font.Font(font_path, self.font_size)  
+        self.options = ["Start Game", "Settings", "Quit"]
+        self.selected_option = 0  
 
 
+    def load_frames(self):
+        frames = []
+        for filename in sorted(os.listdir(self.frame_folder)):
+            if filename.endswith(".png"):
+                frame_path = os.path.join(self.frame_folder, filename)
+                image = pygame.image.load(frame_path)
+                image = pygame.transform.scale(image, (800, 600))
+                frames.append(image)
+        return frames
 
-if __name__ == "__main__":
+    def update_frame(self):
+        self.screen.blit(self.frames[self.current_frame], (0, 0))
+        self.current_frame = (self.current_frame + 1) % len(self.frames)
+
+    def show(self):
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        return self.options[self.selected_option]
+                    elif event.key == pygame.K_w:  
+                        self.selected_option = (self.selected_option - 1) % len(self.options)
+                    elif event.key == pygame.K_s:  
+                        self.selected_option = (self.selected_option + 1) % len(self.options)
+
+            self.update_frame()
+            self.draw_title()  
+            self.draw_menu()   
+            pygame.display.update()
+            self.clock.tick(self.fps)
+
+        return 'quit'
+    
+    def draw_title(self):
+        title_surface = self.font.render("MazeGame", True, (255, 0, 0))  
+        title_rect = title_surface.get_rect(center=(400, 50)) 
+        self.screen.blit(title_surface, title_rect)
+
+    def draw_menu(self):
+        for i, option in enumerate(self.options):
+            color = (255, 0, 0) if i == self.selected_option else (255, 255, 255)
+            text_surface = self.font.render(option, True, color)
+            text_rect = text_surface.get_rect(center=(400, 300 + i * 70))  
+            self.screen.blit(text_surface, text_rect)
+
+def start_game():
     window = initialize_glfw()
     myApp = App(window)
 
+def main_menu():
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600))
+
+    frame_folder = "assets/MazeGameFrames/"  
+    font_path = "assets/fonts/DotGothic16-Regular.ttf"  
+    menu = StartMenu(screen, frame_folder, font_path)  
+
+    action = menu.show()
+    pygame.quit()
+
+    if action == 'Start Game':
+        start_game()
+    elif action == 'Quit':
+        sys.exit()
+
+if __name__ == "__main__":
+    main_menu()
