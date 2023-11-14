@@ -19,6 +19,7 @@ import pygame as pg
 
 from mazeGenerator import MazeGenerator
 from enemy import Enemy
+from key import Key
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -43,7 +44,8 @@ def initialize_glfw():
 
 class Scene:
 
-    def __init__(self) -> None:
+    def __init__(self, window) -> None:
+        self.window = window
         # Enemy
         self.start_moving = True
         
@@ -85,6 +87,7 @@ class Scene:
         # Player
         #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         self.player = Player([0, 2, 0])
+        self.keys = self.place_keys(5)
         
         # Enemy
         self.enemy = Enemy([0, 0, 0])
@@ -176,8 +179,12 @@ class Scene:
     def update(self, rate):
         self.move_enemy_towards_player()
         self.enemies[0].position = self.enemy.position
+        self.check_player_key_collision()
         if self.check_enemy_player_collision():
             print("You died!")
+        camera_direction = self.player.get_camera_direction()
+        for key in self.keys:
+            key.update(.1, camera_direction)
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
@@ -299,12 +306,51 @@ class Scene:
 
             self.enemy.position = enemy_position
 
+    def place_keys(self, number_of_keys, min_distance=10):
+        keys = []
+        potential_positions = [(i, j) for i in range(self.maze_size) for j in range(self.maze_size) if self.maze[i][j] == 0]
+        random.shuffle(potential_positions)
+
+        for i, j in potential_positions:
+            if len(keys) >= number_of_keys:
+                break  
+
+            x = j * self.cube_size
+            y = 2  
+            z = i * self.cube_size
+
+
+            if all(np.linalg.norm(np.array([x, y, z]) - np.array(key.position)) >= min_distance for key in keys):
+                if not self.check_collision_with_walls(x, y, z):
+                    keys.append(Key([x, y, z]))
+                    print(f"Key placed at maze coordinates ({i}, {j}), world coordinates ({x}, {y}, {z})")
+        
+        if len(keys) < number_of_keys:
+            print("Unable to find sufficient clear positions for all keys.")
+        
+        return keys
+
+    def check_player_key_collision(self):
+        player_min, player_max = self.player.get_bounding_box()
+        for key in self.keys:
+            if key.collected:
+                continue  
+
+            key_min, key_max = key.get_bounding_box()
+            if self.check_collision(player_min, player_max, key_min, key_max):
+                self.handle_key_pickup(key)
+
+    def handle_key_pickup(self, key):
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_E) == GLFW_CONSTANTS.GLFW_PRESS:
+            key.collect()
+            print("Key collected!")
+
 class App:
 
     def __init__(self, window):
         
         self.window = window
-        self.scene = Scene()
+        self.scene = Scene(window)
         self.renderer = GraphicsEngine(len(self.scene.lights))
 
         self.lastTime = glfw.get_time()

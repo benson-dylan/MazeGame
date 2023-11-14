@@ -44,6 +44,10 @@ class GraphicsEngine:
         self.light_billboard = BillBoard(w=0.2, h=0.2)
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
 
+        #Key
+        self.key_texture = Material("assets/textures/key.png")
+        self.key_billboard = BillBoard(w=0.2, h=0.2)
+
         glClearColor(0.2, 0.5, 0.5, 1)
         glEnable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
@@ -188,6 +192,25 @@ class GraphicsEngine:
             glDrawArrays(GL_TRIANGLES, 0, self.enemy_billboard.n_vertices)
 
         # ----------------------------------------------------
+
+
+        # Render keys
+        self.key_texture.use()
+        for key in scene.keys:
+            if key.collected:
+                continue
+
+            key_position = np.array(key.position)
+            key_rotation = key.rotation
+            model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+            scaling_factor = 5.0  
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32)))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=key_rotation))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(key_position, dtype=np.float32))
+            self.shader["model_matrix"] = model_transform
+            glBindVertexArray(self.key_billboard.vao)
+            glDrawArrays(GL_TRIANGLES, 0, self.key_billboard.n_vertices)
+
 
         self.shader["model_matrix"] = model_transform
         glBindVertexArray(self.teefy_billboard.vao)
