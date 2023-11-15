@@ -20,11 +20,23 @@ class MazeGenerator:
         # Find open cells in the maze
         open_cells = [(i, j) for i, row in enumerate(maze_2d_array) for j, cell in enumerate(row) if cell == 0]
 
-        # Randomly select a portal exit point from open cells
-        portal_exit_point = random.choice(open_cells)
+        # Find a suitable exit point
+        exit_point = None
+        while not exit_point:
+            candidate_exit = random.choice(open_cells)
+            x, y = candidate_exit
+
+            # Check if the exit point is open in front, back, left, or right
+            if (
+                0 <= x - 1 < maze_size and maze_2d_array[x - 1][y] == 0 or
+                0 <= x + 1 < maze_size and maze_2d_array[x + 1][y] == 0 or
+                0 <= y - 1 < maze_size and maze_2d_array[x][y - 1] == 0 or
+                0 <= y + 1 < maze_size and maze_2d_array[x][y + 1] == 0
+            ):
+                exit_point = candidate_exit
 
         # Set exit_x and exit_y
-        self.exit_x, self.exit_y = portal_exit_point
+        self.exit_x, self.exit_y = exit_point
 
         # Set the maze attribute
         self.maze = maze_2d_array
