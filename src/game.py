@@ -58,6 +58,7 @@ class Scene:
         self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze(self.maze_size)
         print(self.maze)
         print("Exit Location", self.exit_x, self.exit_y)
+        
 
         # self.teefys = [
         #     SimpleComponent(
@@ -84,6 +85,21 @@ class Scene:
 
         self.objects = []
         
+        # Exit sign, add lights
+        self.exit = SimpleComponent(
+                position=[self.exit_x * 5, 1, self.exit_y * 5],
+                eulers= [0,0,0],
+                size=3
+            )
+        self.lights.append(
+                        Light(
+                            position=[self.exit_x * 5, 1, self.exit_y * 5],
+                            color= [0.8, 0.8, 0.4],
+                            intensity= 5
+                        )
+                    ) 
+        
+    
         # Player
         #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         self.player = Player([0, 2, 0])
@@ -179,12 +195,19 @@ class Scene:
     def update(self, rate):
         self.move_enemy_towards_player()
         self.enemies[0].position = self.enemy.position
+
         self.check_player_key_collision()
         if self.check_enemy_player_collision():
             print("You died!")
         camera_direction = self.player.get_camera_direction()
         for key in self.keys:
             key.update(.1, camera_direction)
+
+        # Update exit position for oscillating motion
+        time_elapsed = time.time()
+        vertical_offset = np.sin(time_elapsed) * 0.5 
+        self.exit.position = [self.exit_x * 5, 1.5 + vertical_offset, self.exit_y * 5]
+
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
@@ -536,8 +559,8 @@ def main_menu():
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
 
-    frame_folder = "assets/MazeGameFrames/"  
-    font_path = "assets/fonts/DotGothic16-Regular.ttf"  
+    frame_folder = "../assets/MazeGameFrames/"  
+    font_path = "../assets/fonts/DotGothic16-Regular.ttf"  
     menu = StartMenu(screen, frame_folder, font_path)  
 
     action = menu.show()
