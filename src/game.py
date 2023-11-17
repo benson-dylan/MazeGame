@@ -55,10 +55,10 @@ class Scene:
         self.wall_height = 2.5
 
         self.mazeGenerator = MazeGenerator()
-        self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze(self.maze_size)
+        self.maze = self.mazeGenerator.generate_maze(self.maze_size)
         print(self.maze)
-        print("Exit Location", self.exit_x, self.exit_y)
-
+        
+        
         # self.teefys = [
         #     SimpleComponent(
         #         position= [2,2,0],
@@ -84,10 +84,15 @@ class Scene:
 
         self.objects = []
         
+    
         # Player
         #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         self.player = Player([0, 2, 0])
-        self.keys = self.place_keys(5)
+
+        # Objective
+        self.collected_key_count = 0
+        self.keys, self.total_key_count = self.place_keys(3)
+        self.updated_exit_position = False
         
         # Enemy
         self.enemy = Enemy([0, 0, 0])
@@ -99,6 +104,23 @@ class Scene:
                 size=8
             )
         ]
+
+        # Exit sign, place the exit out of the view initially
+        self.exit = SimpleComponent(
+                position=[0,0,0],
+                eulers= [0,0,0],
+                size=3
+            )
+        self.lights.append(
+                        Light(
+                            position=[0,0,0],
+                            color= [0.8, 0.8, 0.4],
+                            intensity= 5
+                        )
+                    ) 
+        self.exit.position = self.find_clear_spawn()
+        self.exit.position[1] = 50
+        self.lights[0].position = self.exit.position
         
 
         # Play the ambient sound
@@ -179,12 +201,34 @@ class Scene:
     def update(self, rate):
         self.move_enemy_towards_player()
         self.enemies[0].position = self.enemy.position
+
         self.check_player_key_collision()
         if self.check_enemy_player_collision():
             print("You died!")
         camera_direction = self.player.get_camera_direction()
         for key in self.keys:
             key.update(.1, camera_direction)
+
+        # Show the exit when all keys are collected
+        if self.total_key_count == self.collected_key_count:
+            if self.updated_exit_position == False:
+                # Exit sign, add lights
+                self.exit.position[1] = 1
+                self.lights[0].position[1] = 3
+                self.updated_exit_position == True
+            
+            # Move the exit up and down
+            time_elapsed = time.time()
+            vertical_offset = np.sin(time_elapsed) * 0.3 
+            self.exit.position[1] = 1 + vertical_offset
+
+            boundary = 2 # boundary threshold for exit
+            if (
+                self.exit.position[0] - boundary <= self.player.position[0] <= self.exit.position[0] + boundary and
+                self.exit.position[2] - boundary <= self.player.position[2] <= self.exit.position[2] + boundary
+            ):
+                print("You win!")
+
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
             vector = self.player.position - teefy.position
@@ -290,7 +334,7 @@ class Scene:
                 if axis == 1:  # Skip the y-axis
                     continue
 
-                step_size = 0.005 # ENEMY MOVEMENT SPEED
+                step_size = 0.008 # ENEMY MOVEMENT SPEED
                 temp_position = enemy_position.copy()
                 temp_position[axis] += direction_to_player[axis] * step_size
 
@@ -310,7 +354,7 @@ class Scene:
         keys = []
         potential_positions = [(i, j) for i in range(self.maze_size) for j in range(self.maze_size) if self.maze[i][j] == 0]
         random.shuffle(potential_positions)
-
+        count = 0
         for i, j in potential_positions:
             if len(keys) >= number_of_keys:
                 break  
@@ -324,11 +368,12 @@ class Scene:
                 if not self.check_collision_with_walls(x, y, z):
                     keys.append(Key([x, y, z]))
                     print(f"Key placed at maze coordinates ({i}, {j}), world coordinates ({x}, {y}, {z})")
+                    count += 1
         
         if len(keys) < number_of_keys:
             print("Unable to find sufficient clear positions for all keys.")
         
-        return keys
+        return keys, count
 
     def check_player_key_collision(self):
         player_min, player_max = self.player.get_bounding_box()
@@ -343,7 +388,8 @@ class Scene:
     def handle_key_pickup(self, key):
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_E) == GLFW_CONSTANTS.GLFW_PRESS:
             key.collect()
-            print("Key collected!")
+            self.collected_key_count += 1
+            print("Key collected!", self.collected_key_count)
 
 class App:
 
@@ -536,8 +582,8 @@ def main_menu():
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
 
-    frame_folder = "assets/MazeGameFrames/"  
-    font_path = "assets/fonts/DotGothic16-Regular.ttf"  
+    frame_folder = "../assets/MazeGameFrames/"  
+    font_path = "../assets/fonts/DotGothic16-Regular.ttf"  
     menu = StartMenu(screen, frame_folder, font_path)  
 
     action = menu.show()

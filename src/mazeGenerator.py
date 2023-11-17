@@ -20,14 +20,9 @@ class MazeGenerator:
         # Find open cells in the maze
         open_cells = [(i, j) for i, row in enumerate(maze_2d_array) for j, cell in enumerate(row) if cell == 0]
 
-        # Randomly select a portal exit point from open cells
-        portal_exit_point = random.choice(open_cells)
-
-        # Set exit_x and exit_y
-        self.exit_x, self.exit_y = portal_exit_point
 
         # Set the maze attribute
         self.maze = maze_2d_array
 
         # Return the results
-        return self.maze, self.exit_x, self.exit_y
+        return self.maze
