@@ -203,7 +203,7 @@ class GraphicsEngine:
             key_position = np.array(key.position)
             key_rotation = key.rotation
             model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-            scaling_factor = 5.0  
+            scaling_factor = 3.0  
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32)))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=key_rotation))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(key_position, dtype=np.float32))

@@ -306,7 +306,7 @@ class Scene:
 
             self.enemy.position = enemy_position
 
-    def place_keys(self, number_of_keys, min_distance=10):
+    def place_keys(self, number_of_keys, min_distance=15):
         keys = []
         potential_positions = [(i, j) for i in range(self.maze_size) for j in range(self.maze_size) if self.maze[i][j] == 0]
         random.shuffle(potential_positions)
