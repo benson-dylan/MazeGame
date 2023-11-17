@@ -106,8 +106,7 @@ class Scene:
 
         # Objective
         self.collected_key_count = 0
-        self.total_key_count = 3
-        self.keys = self.place_keys(3)
+        self.keys, self.total_key_count = self.place_keys(3)
         
         # Enemy
         self.enemy = Enemy([0, 0, 0])
@@ -350,7 +349,7 @@ class Scene:
         keys = []
         potential_positions = [(i, j) for i in range(self.maze_size) for j in range(self.maze_size) if self.maze[i][j] == 0]
         random.shuffle(potential_positions)
-
+        count = 0
         for i, j in potential_positions:
             if len(keys) >= number_of_keys:
                 break  
@@ -364,11 +363,12 @@ class Scene:
                 if not self.check_collision_with_walls(x, y, z):
                     keys.append(Key([x, y, z]))
                     print(f"Key placed at maze coordinates ({i}, {j}), world coordinates ({x}, {y}, {z})")
+                    count += 1
         
         if len(keys) < number_of_keys:
             print("Unable to find sufficient clear positions for all keys.")
         
-        return keys
+        return keys, count
 
     def check_player_key_collision(self):
         player_min, player_max = self.player.get_bounding_box()
