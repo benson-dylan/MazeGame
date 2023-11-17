@@ -55,9 +55,8 @@ class Scene:
         self.wall_height = 2.5
 
         self.mazeGenerator = MazeGenerator()
-        self.maze, self.exit_x, self.exit_y = self.mazeGenerator.generate_maze(self.maze_size)
+        self.maze = self.mazeGenerator.generate_maze(self.maze_size)
         print(self.maze)
-        print("Exit Location", self.exit_x, self.exit_y)
         
         
         # self.teefys = [
@@ -85,20 +84,6 @@ class Scene:
 
         self.objects = []
         
-        # Exit sign, place the exit out of the view initially
-        self.exit = SimpleComponent(
-                position=[self.exit_x * 5, 50, self.exit_y * 5],
-                eulers= [0,0,0],
-                size=3
-            )
-        self.lights.append(
-                        Light(
-                            position=[self.exit_x * 5, 50, self.exit_y * 5],
-                            color= [0.8, 0.8, 0.4],
-                            intensity= 5
-                        )
-                    ) 
-        
     
         # Player
         #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
@@ -107,6 +92,7 @@ class Scene:
         # Objective
         self.collected_key_count = 0
         self.keys, self.total_key_count = self.place_keys(3)
+        self.updated_exit_position = False
         
         # Enemy
         self.enemy = Enemy([0, 0, 0])
@@ -118,6 +104,23 @@ class Scene:
                 size=8
             )
         ]
+
+        # Exit sign, place the exit out of the view initially
+        self.exit = SimpleComponent(
+                position=[0,0,0],
+                eulers= [0,0,0],
+                size=3
+            )
+        self.lights.append(
+                        Light(
+                            position=[0,0,0],
+                            color= [0.8, 0.8, 0.4],
+                            intensity= 5
+                        )
+                    ) 
+        self.exit.position = self.find_clear_spawn()
+        self.exit.position[1] = 50
+        self.lights[0].position = self.exit.position
         
 
         # Play the ambient sound
@@ -208,21 +211,23 @@ class Scene:
 
         # Show the exit when all keys are collected
         if self.total_key_count == self.collected_key_count:
-            # Exit sign, add lights
-            self.exit.position = [[self.exit_x * 5, 1, self.exit_y * 5]]
-            self.lights[0].position = [[self.exit_x * 5, 1, self.exit_y * 5]]
+            if self.updated_exit_position == False:
+                # Exit sign, add lights
+                self.exit.position[1] = 1
+                self.lights[0].position[1] = 3
+                self.updated_exit_position == True
             
             # Move the exit up and down
             time_elapsed = time.time()
             vertical_offset = np.sin(time_elapsed) * 0.3 
-            self.exit.position = [self.exit_x * 5, 1 + vertical_offset, self.exit_y * 5]
+            self.exit.position[1] = 1 + vertical_offset
 
-        boundary = 2 # boundary threshold for exit
-        if (
-            self.exit_x * 5 - boundary <= self.player.position[0] <= self.exit_x * 5 + boundary and
-            self.exit_y * 5 - boundary <= self.player.position[2] <= self.exit_y * 5 + boundary
-        ):
-            print("You win!")
+            boundary = 2 # boundary threshold for exit
+            if (
+                self.exit.position[0] - boundary <= self.player.position[0] <= self.exit.position[0] + boundary and
+                self.exit.position[2] - boundary <= self.player.position[2] <= self.exit.position[2] + boundary
+            ):
+                print("You win!")
 
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
