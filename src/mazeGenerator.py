@@ -28,10 +28,10 @@ class MazeGenerator:
 
             # Check if the exit point is open in front, back, left, or right
             if (
-                0 <= x - 1 < maze_size and maze_2d_array[x - 1][y] == 0 or
-                0 <= x + 1 < maze_size and maze_2d_array[x + 1][y] == 0 or
-                0 <= y - 1 < maze_size and maze_2d_array[x][y - 1] == 0 or
-                0 <= y + 1 < maze_size and maze_2d_array[x][y + 1] == 0
+                (0 <= x - 1 < maze_size and maze_2d_array[x - 1][y] == 0) or
+                (0 <= x + 1 < maze_size and maze_2d_array[x + 1][y] == 0) or
+                (0 <= y - 1 < maze_size and maze_2d_array[x][y - 1] == 0) or
+                (0 <= y + 1 < maze_size and maze_2d_array[x][y + 1] == 0)
             ):
                 exit_point = candidate_exit
 

@@ -59,7 +59,7 @@ class Scene:
         print(self.maze)
         print("Exit Location", self.exit_x, self.exit_y)
         
-
+        
         # self.teefys = [
         #     SimpleComponent(
         #         position= [2,2,0],
@@ -85,15 +85,15 @@ class Scene:
 
         self.objects = []
         
-        # Exit sign, add lights
+        # Exit sign, place the exit out of the view initially
         self.exit = SimpleComponent(
-                position=[self.exit_x * 5, 1, self.exit_y * 5],
+                position=[self.exit_x * 5, 50, self.exit_y * 5],
                 eulers= [0,0,0],
                 size=3
             )
         self.lights.append(
                         Light(
-                            position=[self.exit_x * 5, 1, self.exit_y * 5],
+                            position=[self.exit_x * 5, 50, self.exit_y * 5],
                             color= [0.8, 0.8, 0.4],
                             intensity= 5
                         )
@@ -103,7 +103,11 @@ class Scene:
         # Player
         #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
         self.player = Player([0, 2, 0])
-        self.keys = self.place_keys(5)
+
+        # Objective
+        self.collected_key_count = 0
+        self.total_key_count = 3
+        self.keys = self.place_keys(3)
         
         # Enemy
         self.enemy = Enemy([0, 0, 0])
@@ -203,10 +207,23 @@ class Scene:
         for key in self.keys:
             key.update(.1, camera_direction)
 
-        # Update exit position for oscillating motion
-        time_elapsed = time.time()
-        vertical_offset = np.sin(time_elapsed) * 0.5 
-        self.exit.position = [self.exit_x * 5, 1.5 + vertical_offset, self.exit_y * 5]
+        # Show the exit when all keys are collected
+        if self.total_key_count == self.collected_key_count:
+            # Exit sign, add lights
+            self.exit.position = [[self.exit_x * 5, 1, self.exit_y * 5]]
+            self.lights[0].position = [[self.exit_x * 5, 1, self.exit_y * 5]]
+            
+            # Move the exit up and down
+            time_elapsed = time.time()
+            vertical_offset = np.sin(time_elapsed) * 0.3 
+            self.exit.position = [self.exit_x * 5, 1 + vertical_offset, self.exit_y * 5]
+
+        boundary = 2 # boundary threshold for exit
+        if (
+            self.exit_x * 5 - boundary <= self.player.position[0] <= self.exit_x * 5 + boundary and
+            self.exit_y * 5 - boundary <= self.player.position[2] <= self.exit_y * 5 + boundary
+        ):
+            print("You win!")
 
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
@@ -313,7 +330,7 @@ class Scene:
                 if axis == 1:  # Skip the y-axis
                     continue
 
-                step_size = 0.005 # ENEMY MOVEMENT SPEED
+                step_size = 0.008 # ENEMY MOVEMENT SPEED
                 temp_position = enemy_position.copy()
                 temp_position[axis] += direction_to_player[axis] * step_size
 
@@ -366,7 +383,8 @@ class Scene:
     def handle_key_pickup(self, key):
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_E) == GLFW_CONSTANTS.GLFW_PRESS:
             key.collect()
-            print("Key collected!")
+            self.collected_key_count += 1
+            print("Key collected!", self.collected_key_count)
 
 class App:
 
