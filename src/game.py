@@ -57,6 +57,7 @@ class Scene:
         self.mazeGenerator = MazeGenerator()
         self.maze = self.mazeGenerator.generate_maze(self.maze_size)
         print(self.maze)
+        self.player_dead = False
         
         
         # self.teefys = [
@@ -205,6 +206,7 @@ class Scene:
         self.check_player_key_collision()
         if self.check_enemy_player_collision():
             print("You died!")
+            self.player_dead = True
         camera_direction = self.player.get_camera_direction()
         for key in self.keys:
             key.update(.1, camera_direction)
@@ -441,6 +443,9 @@ class App:
 
             glfw.poll_events()
 
+            if self.scene.player_dead:
+                draw = False
+
             self.scene.update(self.frameTime / 16.7)  # Update the game scene
             self.renderer.render(self.scene)  # Render the game scene
 
@@ -509,6 +514,9 @@ class App:
 
 
     def quit(self):
+        glfw.set_window_should_close(self.window, True)
+        glfw.destroy_window(self.window)
+        glfw.terminate()
         self.renderer.quit()
 
 class StartMenu:
@@ -578,12 +586,59 @@ def start_game():
     window = initialize_glfw()
     myApp = App(window)
 
+class DeathMenu:
+    def __init__(self, screen, font_path):  
+        self.screen = screen
+        self.running = True
+        self.clock = pygame.time.Clock()
+        self.fps = 2
+        self.font_size = 60
+        self.font = pygame.font.Font(font_path, self.font_size)  
+        self.options = ["Retry", "Quit"]
+        self.selected_option = 0  
+
+    def show(self):
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        return self.options[self.selected_option]
+                    elif event.key == pygame.K_w:  
+                        self.selected_option = (self.selected_option - 1) % len(self.options)
+                    elif event.key == pygame.K_s:  
+                        self.selected_option = (self.selected_option + 1) % len(self.options)
+
+            self.screen.fill((0, 0, 0))  # Black background
+            self.draw_title()  
+            self.draw_menu()   
+            pygame.display.update()
+            self.clock.tick(self.fps)
+
+        return 'quit'
+    
+
+    def draw_title(self):
+        title_surface = self.font.render("You Died", True, (255, 0, 0))  
+        title_rect = title_surface.get_rect(center=(400, 50)) 
+        self.screen.blit(title_surface, title_rect)
+
+    def draw_menu(self):
+        for i, option in enumerate(self.options):
+            color = (255, 0, 0) if i == self.selected_option else (255, 255, 255)
+            text_surface = self.font.render(option, True, color)
+            text_rect = text_surface.get_rect(center=(400, 300 + i * 70))  
+            self.screen.blit(text_surface, text_rect)
+
+
 def main_menu():
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
 
-    frame_folder = "../assets/MazeGameFrames/"  
-    font_path = "../assets/fonts/DotGothic16-Regular.ttf"  
+    frame_folder = "assets/MazeGameFrames/"  
+    font_path = "assets/fonts/DotGothic16-Regular.ttf"  
     menu = StartMenu(screen, frame_folder, font_path)  
 
     action = menu.show()
@@ -596,3 +651,14 @@ def main_menu():
 
 if __name__ == "__main__":
     main_menu()
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600))
+    font_path = "assets/fonts/DotGothic16-Regular.ttf"
+    death_menu = DeathMenu(screen, font_path)
+    action = death_menu.show()
+    pygame.quit()
+
+    if action == 'Retry':
+        main_menu()
+    else:
+        sys.exit()
