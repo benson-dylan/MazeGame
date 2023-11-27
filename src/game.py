@@ -58,6 +58,7 @@ class Scene:
         self.maze = self.mazeGenerator.generate_maze(self.maze_size)
         print(self.maze)
         self.player_dead = False
+        self.player_won = False
         
         
         # self.teefys = [
@@ -230,6 +231,7 @@ class Scene:
                 self.exit.position[2] - boundary <= self.player.position[2] <= self.exit.position[2] + boundary
             ):
                 print("You win!")
+                self.player_won = True
 
         # OBJECT COLLISION #
         """ for teefy in self.teefys:
@@ -443,7 +445,7 @@ class App:
 
             glfw.poll_events()
 
-            if self.scene.player_dead:
+            if self.scene.player_dead or self.scene.player_won:
                 draw = False
 
             self.scene.update(self.frameTime / 16.7)  # Update the game scene
@@ -585,9 +587,11 @@ class StartMenu:
 def start_game():
     window = initialize_glfw()
     myApp = App(window)
+    return myApp
 
 class DeathMenu:
-    def __init__(self, screen, font_path):  
+    def __init__(self, screen, font_path, scene): 
+        self.scene = scene
         self.screen = screen
         self.running = True
         self.clock = pygame.time.Clock()
@@ -621,7 +625,10 @@ class DeathMenu:
     
 
     def draw_title(self):
-        title_surface = self.font.render("You Died", True, (255, 0, 0))  
+        if self.scene.player_dead:
+            title_surface = self.font.render("You Died", True, (255, 0, 0))
+        elif self.scene.player_won:
+            title_surface = self.font.render("You Won", True, (173, 216, 230))
         title_rect = title_surface.get_rect(center=(400, 50)) 
         self.screen.blit(title_surface, title_rect)
 
@@ -645,20 +652,22 @@ def main_menu():
     pygame.quit()
 
     if action == 'Start Game':
-        start_game()
+        return start_game()  # Return myApp from here
     elif action == 'Quit':
         sys.exit()
 
-if __name__ == "__main__":
-    main_menu()
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600))
-    font_path = "assets/fonts/DotGothic16-Regular.ttf"
-    death_menu = DeathMenu(screen, font_path)
-    action = death_menu.show()
-    pygame.quit()
 
-    if action == 'Retry':
-        main_menu()
-    else:
-        sys.exit()
+if __name__ == "__main__":
+    myApp = main_menu()  # Receive myApp here
+    if myApp:  # Check if myApp is not None
+        pygame.init()
+        screen = pygame.display.set_mode((800, 600))
+        font_path = "assets/fonts/DotGothic16-Regular.ttf"
+        death_menu = DeathMenu(screen, font_path, myApp.scene)  # Pass the scene to DeathMenu
+        action = death_menu.show()
+        pygame.quit()
+
+        if action == 'Retry':
+            main_menu()
+        else:
+            sys.exit()
