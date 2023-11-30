@@ -1,55 +1,28 @@
-import pygame as pg
-from OpenGL.GL import *
-import numpy as np
+import random
+from mazelib import Maze
+from mazelib.generate.Prims import Prims
 
 class MazeGenerator:
+    def __init__(self):
+        self.maze = None
+        self.exit_x = None
+        self.exit_y = None
 
-    def __init__(self, mapSize):
-        
-        self.map_size = mapSize
-        self.wall_boxes = []
+    def generate_maze(self, maze_size):
+        # Generate the maze
+        m = Maze()
+        m.generator = Prims(maze_size, maze_size)
+        m.generate()
 
+        # Convert the maze to a 2D array
+        maze_2d_array = [[1 if cell == '#' else 0 for cell in row] for row in str(m).split('\n') if row.strip()]
 
-    def generate_maze(self):
-        # Generate a random maze layout with 1s (walls) and 0s (open paths)
-        maze = np.random.choice([0, 0, 0, 0, 1, 1], (self.map_size, self.map_size))
-        # Ensure the maze's border is surrounded by walls
-        maze[0, :], maze[self.map_size-1, :], maze[:, 0], maze[:, self.map_size-1] = (1, 1, 1, 1)
-
-        # Initialize the player's position and orientation
-        player_x, player_y = 1.5, np.random.randint(1, self.map_size - 1) + .5
-        x, y = int(player_x), int(player_y)
-        
-        # Mark the player's initial position as open
-        maze[x][y] = 0
-        count = 0
-
-        # Find a valid location for the exit and pace it
-        while True:
-            # Create test coordinates based on current player (x, y) values
-            test_x, test_y = (x, y)
-
-            # Randomly decide to move in the x or y direction
-            if np.random.uniform() > 0.5:
-                test_x = test_x + np.random.choice([-1, 1])
-            else:
-                test_y = test_y + np.random.choice([-1, 1])
-
-            # Check if the test coordinates are within the maze boundaries
-            if test_x > 0 and test_x < self.map_size - 1 and test_y > 0 and test_y < self.map_size - 1:
-                # Check if the test cell is open (0)
-                if maze[test_x][test_y] == 0 or count > 5:
-                    count = 0
-                    x, y = (test_x, test_y)
-                    maze[x][y] = 0
-
-                    # Find a valid second-to-last column of the maze
-                    if x == self.map_size - 2:
-                        exit_x, exit_y = np.random.randint(1, self.map_size - 1), np.random.randint(1, self.map_size - 1)
-                        break
-                else:
-                    count = count + 1
+        # Find open cells in the maze
+        open_cells = [(i, j) for i, row in enumerate(maze_2d_array) for j, cell in enumerate(row) if cell == 0]
 
 
-        return player_x, player_y, maze, exit_x, exit_y
-    
+        # Set the maze attribute
+        self.maze = maze_2d_array
+
+        # Return the results
+        return self.maze

@@ -3,7 +3,7 @@ from OpenGL.GL import *
 import numpy as np
 import pyrr
 
-class Player:
+class Enemy:
 
     def __init__(self, position) -> None:
         
@@ -39,11 +39,3 @@ class Player:
         min_corner = position - half_size
         max_corner = position + half_size
         return min_corner, max_corner
-    
-    def get_camera_direction(self):
-        theta_rad = np.radians(self.theta)
-        phi_rad = np.radians(self.phi)
-        forward_x = np.sin(theta_rad) * np.cos(phi_rad)
-        forward_y = np.sin(phi_rad)
-        forward_z = -np.cos(theta_rad) * np.cos(phi_rad)
-        return np.array([forward_x, forward_y, forward_z])
