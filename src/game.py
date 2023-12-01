@@ -108,10 +108,9 @@ class Scene:
         ]
 
         # Exit sign, place the exit out of the view initially
-        self.exit = SimpleComponent(
+        self.exit = Object(
                 position=[0,0,0],
                 eulers= [0,0,0],
-                size=3
             )
         self.lights.append(
                         Light(
@@ -121,8 +120,8 @@ class Scene:
                         )
                     ) 
         self.exit.position = self.find_clear_spawn()
-        self.exit.position[1] = 50
-        self.lights[0].position = self.exit.position
+        self.exit.position[1] = 10
+        #self.lights[0].position = self.exit.position
         
 
         # Play the ambient sound
@@ -408,7 +407,7 @@ class App:
         self.numFrames = 0
         self.frameTime = 0
         self.speed = 0.1
-        self.sensativity = 2
+        self.sensativity = 1
 
         self.walk_offset_lookup = {
             1: 0,
