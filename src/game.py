@@ -615,7 +615,7 @@ class DeathMenu:
                     elif event.key == pygame.K_s:  
                         self.selected_option = (self.selected_option + 1) % len(self.options)
 
-            self.screen.fill((0, 0, 0))  # Black background
+            self.screen.fill((0, 0, 0))  
             self.draw_title()  
             self.draw_menu()   
             pygame.display.update()
@@ -652,18 +652,18 @@ def main_menu():
     pygame.quit()
 
     if action == 'Start Game':
-        return start_game()  # Return myApp from here
+        return start_game()  
     elif action == 'Quit':
         sys.exit()
 
 
 if __name__ == "__main__":
-    myApp = main_menu()  # Receive myApp here
-    if myApp:  # Check if myApp is not None
+    myApp = main_menu()  
+    if myApp:  
         pygame.init()
         screen = pygame.display.set_mode((800, 600))
         font_path = "assets/fonts/DotGothic16-Regular.ttf"
-        death_menu = DeathMenu(screen, font_path, myApp.scene)  # Pass the scene to DeathMenu
+        death_menu = DeathMenu(screen, font_path, myApp.scene)  
         action = death_menu.show()
         pygame.quit()
 
