@@ -230,6 +230,10 @@ class GraphicsEngine:
             glDrawArrays(GL_TRIANGLES, 0, self.key_billboard.n_vertices)
 
 
+        if scene.total_key_count - scene.collected_key_count == 1:
+            glUniform1i(self.lights_on_loc, 0)
+            
+
         glUseProgram(self.light_shader.shader)
 
         self.light_shader["view_matrix"] = view_transforms
