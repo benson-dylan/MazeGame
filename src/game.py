@@ -109,20 +109,18 @@ class Scene:
 
         # Exit sign, place the exit out of the view initially
         self.exit = SimpleComponent(
-                position=[0,0,0],
+                position= self.find_clear_spawn(),
                 eulers= [0,0,0],
                 size=3
             )
+        self.exit.position[1] = 50
         self.lights.append(
                         Light(
-                            position=[0,0,0],
+                            position=self.exit.position,
                             color= [0.8, 0.8, 0.4],
                             intensity= 5
                         )
                     ) 
-        self.exit.position = self.find_clear_spawn()
-        self.exit.position[1] = 50
-        self.lights[0].position = self.exit.position
         
 
         # Play the ambient sound
@@ -354,7 +352,7 @@ class Scene:
 
             self.enemy.position = enemy_position
 
-    def place_keys(self, number_of_keys, min_distance=15):
+    def place_keys(self, number_of_keys, min_distance=10):
         keys = []
         potential_positions = [(i, j) for i in range(self.maze_size) for j in range(self.maze_size) if self.maze[i][j] == 0]
         random.shuffle(potential_positions)
