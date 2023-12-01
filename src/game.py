@@ -626,17 +626,32 @@ class DeathMenu:
 
     def draw_title(self):
         if self.scene.player_dead:
+            background_image_path = 'assets/textures/grave_stone.png'
+            background_image = pygame.image.load(background_image_path)
+            background_image = pygame.transform.scale(background_image, (800, 600)) 
+            self.screen.blit(background_image, (0, 0))
             title_surface = self.font.render("You Died", True, (255, 0, 0))
         elif self.scene.player_won:
-            title_surface = self.font.render("You Won", True, (173, 216, 230))
+            background_image_path = 'assets/textures/trophy.png'
+            background_image = pygame.image.load(background_image_path)
+            background_image = pygame.transform.scale(background_image, (800, 600)) 
+            self.screen.blit(background_image, (0, 0))
+            title_surface = self.font.render("You Won", True, (0, 0, 128))
         title_rect = title_surface.get_rect(center=(400, 50)) 
         self.screen.blit(title_surface, title_rect)
 
     def draw_menu(self):
+        oval_color = (255, 255, 255) 
+        text_color = (255, 0, 0) 
+        oval_margin = 15 
+
         for i, option in enumerate(self.options):
-            color = (255, 0, 0) if i == self.selected_option else (255, 255, 255)
-            text_surface = self.font.render(option, True, color)
-            text_rect = text_surface.get_rect(center=(400, 300 + i * 70))  
+            text_surface = self.font.render(option, True, text_color)
+            text_rect = text_surface.get_rect(center=(400, 300 + i * 100))
+            if i == self.selected_option:
+                oval_rect = text_rect.inflate(oval_margin * 2, oval_margin)
+                pygame.draw.ellipse(self.screen, oval_color, oval_rect, 2)
+
             self.screen.blit(text_surface, text_rect)
 
 
@@ -658,16 +673,18 @@ def main_menu():
 
 
 if __name__ == "__main__":
-    myApp = main_menu()  
-    if myApp:  
-        pygame.init()
-        screen = pygame.display.set_mode((800, 600))
-        font_path = "assets/fonts/DotGothic16-Regular.ttf"
-        death_menu = DeathMenu(screen, font_path, myApp.scene)  
-        action = death_menu.show()
-        pygame.quit()
+    i = 1
+    while i == 1:
+        myApp = main_menu()  
+        if myApp:  
+            pygame.init()
+            screen = pygame.display.set_mode((800, 600))
+            font_path = "assets/fonts/DotGothic16-Regular.ttf"
+            death_menu = DeathMenu(screen, font_path, myApp.scene)  
+            action = death_menu.show()
+            pygame.quit()
 
-        if action == 'Retry':
-            main_menu()
-        else:
-            sys.exit()
+            if action == 'Retry':
+                main_menu()
+            else:
+                sys.exit()
