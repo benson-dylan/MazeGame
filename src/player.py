@@ -47,3 +47,4 @@ class Player:
         forward_y = np.sin(phi_rad)
         forward_z = -np.cos(theta_rad) * np.cos(phi_rad)
         return np.array([forward_x, forward_y, forward_z])
+    

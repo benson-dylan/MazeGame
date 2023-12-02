@@ -12,16 +12,15 @@ import math
 class GraphicsEngine:
 
     def __init__(self, numLights):
-        # self.cube_mesh = CubeWallMesh()
-        self.rayman = Mesh("assets/models/raymanModel.obj")
         self.square = Mesh("assets/models/square.obj")
         self.floor = Floor(w=5.0, h=5.0)
+
+        self.door = Mesh("assets/models/Door.obj")
+        self.door_texture = Material("assets/textures/Wooden_Door.png")
 
         self.wall_mesh = CubeWallMesh() 
 
         self.ceiling = Ceiling(w=5.0, h=5.0)
-        self.wood_texture = Material("assets/textures/wood.png")
-        self.rayman_texture = Material("assets/textures/raymanModel.png", "rayman")
         self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
         self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
 
@@ -40,13 +39,10 @@ class GraphicsEngine:
         # exit 
         self.exit_texture = Material("assets/textures/exit/exit.png")
         self.exit_billboard = BillBoard(w=0.5, h=0.5)
-
-        self.teefy_texture = Material("assets/textures/teefy.png")
-        self.teefy_billboard = BillBoard(w=0.5, h=0.5)
         
-        self.light_texture = Material("assets/textures/lightbulb.png")
-        self.light_billboard = BillBoard(w=0.2, h=0.2)
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
+        self.lights_on_loc = glGetUniformLocation(self.shader.shader, "lightsOn")
+        self.flashlight_loc = glGetUniformLocation(self.shader.shader, "flashlight")
 
         #Key
         self.key_texture = Material("assets/textures/key.png")
@@ -61,6 +57,7 @@ class GraphicsEngine:
         glUseProgram(self.shader.shader)
         glUniform1i(glGetUniformLocation(self.shader.shader, "imageTexture"), 0)
         glUniform1i(self.num_light_loc, numLights)
+        glUniform1i(self.lights_on_loc, 1)
 
         projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
@@ -80,6 +77,7 @@ class GraphicsEngine:
             ],
         }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
+        self.cameraDirLoc = glGetUniformLocation(self.shader.shader, "cameraDirection")
 
         glUseProgram(self.light_shader.shader)
         glUniformMatrix4fv(glGetUniformLocation(self.light_shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
@@ -89,7 +87,7 @@ class GraphicsEngine:
         shader = sl.ShaderProgram(vertexFilepath, fragmentFilepath)
         return shader 
     
-    def render(self, scene):
+    def render(self, scene, flashlight):
         #Refresh screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -104,6 +102,7 @@ class GraphicsEngine:
             glUniform1f(self.lightLocation["intensity"][i], light.intensity)
 
         glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
+        glUniform3fv(self.cameraDirLoc, 1, np.array(scene.player.get_camera_direction(), dtype=np.float32))
 
         
         for wall in scene.walls:
@@ -148,24 +147,6 @@ class GraphicsEngine:
             glBindVertexArray(self.ceiling.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.square.n_vertices)
 
-        # for teefy in scene.teefys:
-
-        #     self.teefy_texture.use()
-
-        #     directionFromPlayer = teefy.position - scene.player.position
-        #     angle1 = np.arctan2(directionFromPlayer[0], -directionFromPlayer[2]) # X, Z
-        #     dist2d = math.sqrt(directionFromPlayer[0]**2 + directionFromPlayer[2]**2)
-        #     angle2 = np.arctan2(directionFromPlayer[1], dist2d)
-
-        #     model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
-        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
-        #     model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy.position, dtype=np.float32))
-
-        #     self.shader["model_matrix"] = model_transform
-        #     glBindVertexArray(self.teefy_billboard.vao)
-        #     glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
-
         ''' Enemy '''
         # Loop through the animation
         current_texture_index = int((time.time() % 1) // 0.25) + 1  # Change textures every 0.25 seconds
@@ -173,10 +154,10 @@ class GraphicsEngine:
         current_texture = getattr(self, f"enemy_texture_{current_texture_index}")
         current_texture.use()
         for enemy in scene.enemies:
-            teefy_position = np.array(enemy.position)
+            enemy_position = np.array(enemy.position)
             player_position = np.array(scene.player.position)
 
-            direction_from_player = teefy_position - player_position
+            direction_from_player = enemy_position - player_position
             angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
             dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
             angle2 = np.arctan2(direction_from_player[1], dist2d)
@@ -189,7 +170,7 @@ class GraphicsEngine:
 
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(teefy_position, dtype=np.float32))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(enemy_position, dtype=np.float32))
 
             self.shader["model_matrix"] = model_transform
             glBindVertexArray(self.enemy_billboard.vao)
@@ -197,30 +178,41 @@ class GraphicsEngine:
 
         # ----------------------------------------------------
         # Exit 
-        self.exit_texture.use()
-        exit = scene.exit  # Assuming scene.exit is the single exit object
+        
+        # exit = scene.exit  # Assuming scene.exit is the single exit object
 
-        portal_position = np.array(exit.position)
-        player_position = np.array(scene.player.position)
+        # portal_position = np.array(exit.position)
+        # player_position = np.array(scene.player.position)
 
-        direction_from_player = portal_position - player_position
-        angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
-        dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
-        angle2 = np.arctan2(direction_from_player[1], dist2d)
+        # direction_from_player = portal_position - player_position
+        # angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
+        # dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
+        # angle2 = np.arctan2(direction_from_player[1], dist2d)
 
-        model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+        # model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
 
-        # Adjust the scaling factor to increase the size of the texture
-        scaling_factor = exit.size 
-        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32), dtype=np.float32))
+        # # Adjust the scaling factor to increase the size of the texture
+        # scaling_factor = exit.size 
+        # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32), dtype=np.float32))
 
-        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
-        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
-        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(portal_position, dtype=np.float32))
+        # # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+        # # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+        # # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(portal_position, dtype=np.float32))
 
-        self.shader["model_matrix"] = model_transform
-        glBindVertexArray(self.exit_billboard.vao)
-        glDrawArrays(GL_TRIANGLES, 0, self.exit_billboard.n_vertices)
+        # self.shader["model_matrix"] = model_transform
+        # glBindVertexArray(self.exit_billboard.vao)
+        # glDrawArrays(GL_TRIANGLES, 0, self.exit_billboard.n_vertices)
+
+        self.door_texture.use()
+        
+        exit = scene.exit
+        model_transforms = pyrr.matrix44.create_identity(np.float32)
+        model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(exit.position, dtype=np.float32))
+        model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.door.scale, dtype=np.float32))
+        self.shader["model_matrix"] = model_transforms
+        glBindVertexArray(self.door.vao)
+        glDrawArrays(GL_TRIANGLES, 0, self.door.n_vertices)
+
 
         # ----------------------------------------------------
         # Render keys
@@ -241,9 +233,9 @@ class GraphicsEngine:
             glDrawArrays(GL_TRIANGLES, 0, self.key_billboard.n_vertices)
 
 
-        self.shader["model_matrix"] = model_transform
-        glBindVertexArray(self.teefy_billboard.vao)
-        glDrawArrays(GL_TRIANGLES, 0, self.teefy_billboard.n_vertices)
+        if scene.total_key_count - scene.collected_key_count > 0:
+            glUniform1i(self.lights_on_loc, 0)
+        glUniform1i(self.flashlight_loc, flashlight)
 
         glUseProgram(self.light_shader.shader)
 
@@ -275,14 +267,6 @@ class GraphicsEngine:
 
     
     def quit(self):
-        self.wall_mesh.destroy()
-        self.rayman.destroy()
-        self.square.destroy
-        self.teefy_billboard.destroy()
-        self.teefy_texture.destroy()
-        self.light_billboard.destroy()
-        self.light_texture.destroy()
-        self.wood_texture.destroy()
         glDeleteProgram(self.shader.shader)
        
 
