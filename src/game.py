@@ -109,7 +109,7 @@ class Scene:
 
         # Exit sign, place the exit out of the view initially
         self.exit = Object(
-                position=[0,0,0],
+                position=self.find_clear_spawn(),
                 eulers= [0,0,0],
             )
         self.lights.append(
@@ -119,8 +119,7 @@ class Scene:
                             intensity= 5
                         )
                     ) 
-        self.exit.position = self.find_clear_spawn()
-        self.exit.position[1] = 10
+        self.exit.position[1] = 1
         #self.lights[0].position = self.exit.position
         
 
@@ -139,6 +138,7 @@ class Scene:
             if new_spawn_position:
                 print(f"New spawn location found at: {new_spawn_position}")
                 self.player.position = new_spawn_position
+                print(f"Player Position: {self.player.position}\nExit Position: {self.exit.position}")
             else:
                 print("No clear spawn location found. Please check your maze configuration.")
 
@@ -408,6 +408,9 @@ class App:
         self.frameTime = 0
         self.speed = 0.1
         self.sensativity = 1
+        self.flashlight = -1
+        self.flashlight_cooldown = 0.2
+        self.last_flashlight_press = 0
 
         self.walk_offset_lookup = {
             1: 0,
@@ -448,7 +451,7 @@ class App:
                 draw = False
 
             self.scene.update(self.frameTime / 16.7)  # Update the game scene
-            self.renderer.render(self.scene)  # Render the game scene
+            self.renderer.render(self.scene, self.flashlight)  # Render the game scene
 
             #Timing
             self.calculateFramerate()
@@ -459,6 +462,7 @@ class App:
         directionModifier = 0
         runBoost = 1
         crouchWalk = 1
+        current_time = glfw.get_time()
 
         if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_W) == GLFW_CONSTANTS.GLFW_PRESS:
                 combo += 1
@@ -474,8 +478,16 @@ class App:
         elif glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_LEFT_CONTROL) == GLFW_CONSTANTS.GLFW_PRESS:
             crouchWalk = 0.5
 
-        
+        if glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_F) == GLFW_CONSTANTS.GLFW_PRESS and current_time - self.last_flashlight_press > self.flashlight_cooldown:
+            self.flashlight *= -1
+            self.last_flashlight_press = current_time
+            if self.flashlight == 1:
+                print("Flashlight on")
+                print(self.scene.player.get_camera_direction())
+            else:
+                print("Flashlight off")
 
+            
         if combo in self.walk_offset_lookup:
             directionModifier = self.walk_offset_lookup[combo]
             dPos = [

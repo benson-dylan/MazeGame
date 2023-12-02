@@ -42,6 +42,7 @@ class GraphicsEngine:
         
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
         self.lights_on_loc = glGetUniformLocation(self.shader.shader, "lightsOn")
+        self.flashlight_loc = glGetUniformLocation(self.shader.shader, "flashlight")
 
         #Key
         self.key_texture = Material("assets/textures/key.png")
@@ -76,6 +77,7 @@ class GraphicsEngine:
             ],
         }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
+        self.cameraDirLoc = glGetUniformLocation(self.shader.shader, "cameraDirection")
 
         glUseProgram(self.light_shader.shader)
         glUniformMatrix4fv(glGetUniformLocation(self.light_shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
@@ -85,7 +87,7 @@ class GraphicsEngine:
         shader = sl.ShaderProgram(vertexFilepath, fragmentFilepath)
         return shader 
     
-    def render(self, scene):
+    def render(self, scene, flashlight):
         #Refresh screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -100,6 +102,7 @@ class GraphicsEngine:
             glUniform1f(self.lightLocation["intensity"][i], light.intensity)
 
         glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
+        glUniform3fv(self.cameraDirLoc, 1, np.array(scene.player.get_camera_direction(), dtype=np.float32))
 
         
         for wall in scene.walls:
@@ -200,7 +203,7 @@ class GraphicsEngine:
         # glBindVertexArray(self.exit_billboard.vao)
         # glDrawArrays(GL_TRIANGLES, 0, self.exit_billboard.n_vertices)
 
-        self.exit_texture.use()
+        self.door_texture.use()
         
         exit = scene.exit
         model_transforms = pyrr.matrix44.create_identity(np.float32)
@@ -230,9 +233,9 @@ class GraphicsEngine:
             glDrawArrays(GL_TRIANGLES, 0, self.key_billboard.n_vertices)
 
 
-        if scene.total_key_count - scene.collected_key_count == 1:
+        if scene.total_key_count - scene.collected_key_count > 0:
             glUniform1i(self.lights_on_loc, 0)
-            
+        glUniform1i(self.flashlight_loc, flashlight)
 
         glUseProgram(self.light_shader.shader)
 
