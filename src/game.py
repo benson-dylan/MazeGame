@@ -95,6 +95,7 @@ class Scene:
 
         # Objective
         self.collected_key_count = 0
+        print("Number of keys " + str(number_of_keys))
         self.keys, self.total_key_count = self.place_keys(number_of_keys)
         self.updated_exit_position = False
         
@@ -551,7 +552,7 @@ class SettingsMenu:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         if self.selected_option == len(self.options) - 1:  # Close option
-                            running = False  # Close the settings menu
+                            running = False
                         else:
                             self.selected_option = (self.selected_option + 1) % len(self.options)
                     elif event.key == pygame.K_w:
@@ -561,6 +562,9 @@ class SettingsMenu:
 
             self.draw_menu()
             pygame.display.update()
+
+        # Return the updated settings when exiting the menu
+        return self.enemy_speed, self.number_of_keys
 
     def adjust_option(self, direction):
         if self.options[self.selected_option] == "Enemy Speed":
@@ -588,6 +592,8 @@ class SettingsMenu:
 
     def get_number_of_keys(self):
         return self.number_of_keys
+    def get_current_settings(self):
+        return self.enemy_speed, self.number_of_keys
 
 
 
@@ -741,12 +747,14 @@ def main_menu():
     screen = pygame.display.set_mode((800, 600))
     frame_folder = "assets/MazeGameFrames/"
     font_path = "assets/fonts/DotGothic16-Regular.ttf"
+
     enemy_speed = 0.008
     number_of_keys = 3
 
     while True:
         menu = StartMenu(screen, frame_folder, font_path)
         action = menu.show()
+
         if action == 'start_game':
             pygame.quit()
             game = start_game(enemy_speed, number_of_keys)
@@ -755,19 +763,23 @@ def main_menu():
             screen = pygame.display.set_mode((800, 600))
             if player_dead or player_won:
                 death_menu = DeathMenu(screen, font_path, game.scene)
-                action = death_menu.show()
-                if action == 'Quit':
+                death_menu_action = death_menu.show()
+                if death_menu_action == 'Quit':
                     break
-        elif action == 'quit':
-            break
+
         elif action == 'settings':
             settings_menu = SettingsMenu(screen, font_path)
-            settings_menu.show()
-            enemy_speed = settings_menu.get_enemy_speed()
-            number_of_keys = settings_menu.get_number_of_keys()
+            # Receive updated settings from the settings menu
+            enemy_speed, number_of_keys = settings_menu.show()
+            print(f"Updated Settings - Enemy Speed: {enemy_speed}, Number of Keys: {number_of_keys}")
+
+        elif action == 'quit':
+            break
 
     pygame.quit()
     sys.exit()
+
+
 
 
 if __name__ == "__main__":
