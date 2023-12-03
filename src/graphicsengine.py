@@ -101,9 +101,18 @@ class GraphicsEngine:
             glUniform3fv(self.lightLocation["color"][i], 1, light.color)
             glUniform1f(self.lightLocation["intensity"][i], light.intensity)
 
-        glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
+        glUniform3fv(self.cameraPosLoc, 1, np.array(scene.player.position, dtype=np.float32))
         glUniform3fv(self.cameraDirLoc, 1, np.array(scene.player.get_camera_direction(), dtype=np.float32))
 
+        self.door_texture.use()
+        exit = scene.exit
+        door_model_transforms = pyrr.matrix44.create_identity(np.float32)
+        door_model_transforms = pyrr.matrix44.multiply(door_model_transforms, pyrr.matrix44.create_from_translation(self.door.center + np.array([15, 3, 5], dtype=np.float32), dtype=np.float32))
+        door_model_transforms = pyrr.matrix44.multiply(door_model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.door.scale, dtype=np.float32))
+        self.shader["model_matrix"] = door_model_transforms
+        glBindVertexArray(self.door.vao)
+        glDrawArrays(GL_TRIANGLES, 0, self.door.n_vertices)
+        print(f"Player: {scene.player.position}\nExit: {scene.exit.position}")
         
         for wall in scene.walls:
 
@@ -203,16 +212,6 @@ class GraphicsEngine:
         # glBindVertexArray(self.exit_billboard.vao)
         # glDrawArrays(GL_TRIANGLES, 0, self.exit_billboard.n_vertices)
 
-        self.door_texture.use()
-        
-        exit = scene.exit
-        model_transforms = pyrr.matrix44.create_identity(np.float32)
-        model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_translation(exit.position, dtype=np.float32))
-        model_transforms = pyrr.matrix44.multiply(model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.door.scale, dtype=np.float32))
-        self.shader["model_matrix"] = model_transforms
-        glBindVertexArray(self.door.vao)
-        glDrawArrays(GL_TRIANGLES, 0, self.door.n_vertices)
-
 
         # ----------------------------------------------------
         # Render keys
@@ -233,7 +232,7 @@ class GraphicsEngine:
             glDrawArrays(GL_TRIANGLES, 0, self.key_billboard.n_vertices)
 
 
-        if scene.total_key_count - scene.collected_key_count > 0:
+        if scene.total_key_count - scene.collected_key_count == 1:
             glUniform1i(self.lights_on_loc, 0)
         glUniform1i(self.flashlight_loc, flashlight)
 
@@ -446,7 +445,7 @@ class Mesh:
         self.vertices = self.obj.vertices
         self.n_vertices = self.obj.n_vertices
         self.dia = self.obj.dia
-        self.scale = 4.0 / self.dia
+        self.scale = 5.0 / self.dia
         self.center = self.obj.center
 
         self.vao = glGenVertexArrays(1)

@@ -59,20 +59,6 @@ class Scene:
         print(self.maze)
         self.player_dead = False
         self.player_won = False
-        
-        
-        # self.teefys = [
-        #     SimpleComponent(
-        #         position= [2,2,0],
-        #         eulers= [0,0,0],
-        #         size=0
-        #     ),
-        #     SimpleComponent(
-        #         position= [5,2,2],
-        #         eulers= [0,0,0],
-        #         size=0
-        #     ),
-        # ]
 
         '''
         Generate the walls, floors, and ceiling
@@ -89,7 +75,7 @@ class Scene:
     
         # Player
         #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
-        self.player = Player([0, 2, 0])
+        self.player = Player([0, 0, 0])
 
         # Objective
         self.collected_key_count = 0
@@ -119,7 +105,7 @@ class Scene:
                             intensity= 5
                         )
                     ) 
-        self.exit.position[1] = 1
+        self.exit.position[1] = 0
         #self.lights[0].position = self.exit.position
         
 
@@ -215,14 +201,14 @@ class Scene:
         if self.total_key_count == self.collected_key_count:
             if self.updated_exit_position == False:
                 # Exit sign, add lights
-                self.exit.position[1] = 1
-                self.lights[0].position[1] = 3
-                self.updated_exit_position == True
+                self.exit.position[1] = 2
+                self.updated_exit_position = True
+                print("Exit spawned")
             
             # Move the exit up and down
-            time_elapsed = time.time()
-            vertical_offset = np.sin(time_elapsed) * 0.3 
-            self.exit.position[1] = 1 + vertical_offset
+            # time_elapsed = time.time()
+            # vertical_offset = np.sin(time_elapsed) * 0.3 
+            # self.exit.position[1] = 1 + vertical_offset
 
             boundary = 2 # boundary threshold for exit
             if (
