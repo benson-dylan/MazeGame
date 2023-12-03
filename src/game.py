@@ -724,13 +724,13 @@ class DeathMenu:
 
     def draw_title(self):
         if self.scene.player_dead:
-            background_image_path = 'assets/textures/grave_stone.png'
+            background_image_path = 'src/assets/textures/grave_stone.png'
             background_image = pygame.image.load(background_image_path)
             background_image = pygame.transform.scale(background_image, (800, 600)) 
             self.screen.blit(background_image, (0, 0))
             title_surface = self.font.render("You Died", True, (255, 0, 0))
         elif self.scene.player_won:
-            background_image_path = 'assets/textures/trophy.png'
+            background_image_path = 'src/assets/textures/trophy.png'
             background_image = pygame.image.load(background_image_path)
             background_image = pygame.transform.scale(background_image, (800, 600)) 
             self.screen.blit(background_image, (0, 0))
@@ -756,8 +756,8 @@ class DeathMenu:
 def main_menu():
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
-    frame_folder = "assets/MazeGameFrames/"
-    font_path = "assets/fonts/DotGothic16-Regular.ttf"
+    frame_folder = "src/assets/MazeGameFrames"
+    font_path = "src/assets/fonts/DotGothic16-Regular.ttf"
 
     enemy_speed = 0.008
     number_of_keys = 3
@@ -800,7 +800,7 @@ if __name__ == "__main__":
         if myApp:  
             pygame.init()
             screen = pygame.display.set_mode((800, 600))
-            font_path = "assets/fonts/DotGothic16-Regular.ttf"
+            font_path = "src/assets/fonts/DotGothic16-Regular.ttf"
             death_menu = DeathMenu(screen, font_path, myApp.scene)  
             action = death_menu.show()
             pygame.quit()

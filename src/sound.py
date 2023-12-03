@@ -7,7 +7,7 @@ class Sound:
         pg.mixer.init()
         pg.mixer.set_num_channels(MAX_SOUND_CHANNELS)
         self.channel = 0
-        self.path = "assets/sounds/"
+        self.path = "src/assets/sounds/"
        
         self.player_move = self.load('footstep.wav')
 
