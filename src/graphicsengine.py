@@ -211,11 +211,14 @@ class GraphicsEngine:
                 continue
 
             key_position = np.array(key.position)
-            key_rotation = key.rotation
+            direction_from_player = key_position - player_position
+            angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
+            dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
+            angle2 = np.arctan2(direction_from_player[1], dist2d)
             model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
             scaling_factor = 3.0  
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32)))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=key_rotation))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(key_position, dtype=np.float32))
             self.shader["model_matrix"] = model_transform
             glBindVertexArray(self.key_billboard.vao)
