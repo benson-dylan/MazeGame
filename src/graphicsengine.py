@@ -15,8 +15,8 @@ class GraphicsEngine:
         self.square = Mesh("src/assets/models/square.obj")
         self.floor = Floor(w=5.0, h=5.0)
 
-        self.door = Mesh("assets/models/Door.obj")
-        self.door_texture = Material("assets/textures/Wooden_Door.png")
+        self.door = Mesh("src/assets/models/Door.obj")
+        self.door_texture = Material("src/assets/textures/Wooden_Door.png")
 
         self.wall_mesh = CubeWallMesh() 
 
@@ -37,7 +37,7 @@ class GraphicsEngine:
         self.enemy_billboard = BillBoard(w=0.5, h=0.5)
 
         # exit 
-        self.exit_texture = Material("assets/textures/exit/exit.png")
+        self.exit_texture = Material("src/assets/textures/exit/exit.png")
         self.exit_billboard = BillBoard(w=0.5, h=0.5)
         
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
@@ -211,11 +211,11 @@ class GraphicsEngine:
                 continue
 
             key_position = np.array(key.position)
-            #key_rotation = key.rotation
+            key_rotation = key.rotation
             model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
             scaling_factor = 3.0  
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32)))
-            #model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=key_rotation))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=key_rotation))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(key_position, dtype=np.float32))
             self.shader["model_matrix"] = model_transform
             glBindVertexArray(self.key_billboard.vao)

@@ -555,6 +555,7 @@ class SettingsMenu:
                             self.selected_option = (self.selected_option + 1) % len(self.options)
                     elif event.key == pygame.K_w:
                         self.adjust_option(-1)
+                        print("enemy speed = " + str(self.enemy_speed))
                     elif event.key == pygame.K_s:
                         self.adjust_option(1)
 
@@ -565,10 +566,13 @@ class SettingsMenu:
         return self.enemy_speed, self.number_of_keys
 
     def adjust_option(self, direction):
-        if self.options[self.selected_option] == "Enemy Speed":
-            self.enemy_speed = max(0.001, self.enemy_speed + self.value_change_amount["Enemy Speed"] * direction)
-        elif self.options[self.selected_option] == "Number of Keys":
-            self.number_of_keys = max(1, self.number_of_keys + self.value_change_amount["Number of Keys"] * direction)
+        option = self.options[self.selected_option]
+        if option == "Enemy Speed":
+            self.enemy_speed += self.value_change_amount[option] * direction
+            self.enemy_speed = max(0, self.enemy_speed)  # Ensure enemy_speed doesn't go below 0
+        elif option == "Number of Keys":
+            self.number_of_keys += self.value_change_amount[option] * direction
+            self.number_of_keys = max(1, self.number_of_keys)  # Ensure number_of_keys doesn't go below 1
 
     def draw_menu(self):
         for i, option in enumerate(self.options):
@@ -637,10 +641,9 @@ class StartMenu:
                         if self.selected_option == 0:  # Start Game
                             return 'start_game'
                         elif self.selected_option == 1:  # Settings
-                            self.run_settings_menu()  # Open the settings menu
+                            return 'settings'  # Open the settings menu
                         elif self.selected_option == 2:  # Quit
-                            pygame.quit()
-                            sys.exit()
+                            return 'quit'
                     elif event.key == pygame.K_w:  
                         self.selected_option = (self.selected_option - 1) % len(self.options)
                     elif event.key == pygame.K_s:  
