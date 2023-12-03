@@ -13,9 +13,9 @@ class GraphicsEngine:
 
     def __init__(self, numLights):
         self.square = Mesh("assets/models/square.obj")
+        self.rayman = Mesh("assets/models/raymanModel.obj")
         self.floor = Floor(w=5.0, h=5.0)
 
-        self.door = Mesh("assets/models/Door.obj")
         self.door_texture = Material("assets/textures/Wooden_Door.png")
 
         self.wall_mesh = CubeWallMesh() 
@@ -38,7 +38,7 @@ class GraphicsEngine:
 
         # exit 
         self.exit_texture = Material("assets/textures/exit/exit.png")
-        self.exit_billboard = BillBoard(w=0.5, h=0.5)
+        self.exit_billboard = BillBoard(w=0.5, h=1.0)
         
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
         self.lights_on_loc = glGetUniformLocation(self.shader.shader, "lightsOn")
@@ -104,16 +104,6 @@ class GraphicsEngine:
         glUniform3fv(self.cameraPosLoc, 1, np.array(scene.player.position, dtype=np.float32))
         glUniform3fv(self.cameraDirLoc, 1, np.array(scene.player.get_camera_direction(), dtype=np.float32))
 
-        self.door_texture.use()
-        exit = scene.exit
-        door_model_transforms = pyrr.matrix44.create_identity(np.float32)
-        door_model_transforms = pyrr.matrix44.multiply(door_model_transforms, pyrr.matrix44.create_from_translation(self.door.center + np.array([15, 3, 5], dtype=np.float32), dtype=np.float32))
-        door_model_transforms = pyrr.matrix44.multiply(door_model_transforms, pyrr.matrix44.create_from_scale(np.array([1,1,1], dtype=np.float32) * self.door.scale, dtype=np.float32))
-        self.shader["model_matrix"] = door_model_transforms
-        glBindVertexArray(self.door.vao)
-        glDrawArrays(GL_TRIANGLES, 0, self.door.n_vertices)
-        print(f"Player: {scene.player.position}\nExit: {scene.exit.position}")
-        
         for wall in scene.walls:
 
             self.wall_texture.use()
@@ -187,30 +177,30 @@ class GraphicsEngine:
 
         # ----------------------------------------------------
         # Exit 
-        
-        # exit = scene.exit  # Assuming scene.exit is the single exit object
+        self.door_texture.use()
+        exit = scene.exit  # Assuming scene.exit is the single exit object
 
-        # portal_position = np.array(exit.position)
-        # player_position = np.array(scene.player.position)
+        portal_position = np.array(exit.position)
+        player_position = np.array(scene.player.position)
 
-        # direction_from_player = portal_position - player_position
-        # angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
-        # dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
-        # angle2 = np.arctan2(direction_from_player[1], dist2d)
+        direction_from_player = portal_position - player_position
+        angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
+        dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
+        angle2 = np.arctan2(direction_from_player[1], dist2d)
 
-        # model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+        model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
 
-        # # Adjust the scaling factor to increase the size of the texture
-        # scaling_factor = exit.size 
-        # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32), dtype=np.float32))
+        # Adjust the scaling factor to increase the size of the texture
+        scaling_factor = exit.size 
+        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32), dtype=np.float32))
 
-        # # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
-        # # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
-        # # model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(portal_position, dtype=np.float32))
+        #model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
+        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(portal_position, dtype=np.float32))
 
-        # self.shader["model_matrix"] = model_transform
-        # glBindVertexArray(self.exit_billboard.vao)
-        # glDrawArrays(GL_TRIANGLES, 0, self.exit_billboard.n_vertices)
+        self.shader["model_matrix"] = model_transform
+        glBindVertexArray(self.exit_billboard.vao)
+        glDrawArrays(GL_TRIANGLES, 0, self.exit_billboard.n_vertices)
 
 
         # ----------------------------------------------------
@@ -447,6 +437,8 @@ class Mesh:
         self.dia = self.obj.dia
         self.scale = 5.0 / self.dia
         self.center = self.obj.center
+
+        print(f"Door center: {self.center}")
 
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)

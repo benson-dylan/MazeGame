@@ -75,7 +75,7 @@ class Scene:
     
         # Player
         #self.player = Player([self.player_y * 5, 2 , self.player_x * 5])
-        self.player = Player([0, 0, 0])
+        self.player = Player([0, 2, 0])
 
         # Objective
         self.collected_key_count = 0
@@ -94,9 +94,10 @@ class Scene:
         ]
 
         # Exit sign, place the exit out of the view initially
-        self.exit = Object(
+        self.exit = SimpleComponent(
                 position=self.find_clear_spawn(),
                 eulers= [0,0,0],
+                size=4
             )
         self.lights.append(
                         Light(
@@ -105,7 +106,7 @@ class Scene:
                             intensity= 5
                         )
                     ) 
-        self.exit.position[1] = 0
+        self.exit.position[1] = -3
         #self.lights[0].position = self.exit.position
         
 
