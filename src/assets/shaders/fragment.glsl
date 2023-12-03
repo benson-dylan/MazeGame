@@ -75,37 +75,26 @@ vec3 calculatePointLight(PointLight light, vec3 fragmentPosition, vec3 fragmentN
 
 vec3 calculateSpotLight()
 {
-    vec3 LightToPixel = normalize(cameraPosition - fragmentPosition);
+    vec3 LightToPixel = normalize(fragmentPosition - cameraPosition);
+    float Distance = length(cameraDirection);
     float SpotFactor = dot(LightToPixel, cameraDirection);
-    float cutoff = 0.9;
+    float cutoff = 0.9396;
+    float attenuation = 1.0 / (constant + linear * Distance + quadratic * (Distance * Distance));
+
+    vec3 N = normalize(fragmentNormal);
+    vec3 L = cameraPosition - fragmentPosition;
+    vec3 fragCamera = normalize(cameraPosition - fragmentPosition);
+    vec3 HV = normalize(L + fragCamera);
+    vec3 LightColor = vec3(0.8, 0.7, 0.4);
 
     if (SpotFactor > cutoff)
     {
-        vec3 Color = texture(imageTexture, fragmentTexCoord).rgb;
+        vec3 Color = texture(imageTexture, fragmentTexCoord).rgb * LightColor;
         float intensity = (1.0 - (1.0 - SpotFactor)/(1.0 - cutoff));
-        return Color * intensity;
+        return (Color * intensity * attenuation) + (LightColor * intensity * pow(max(0.0, dot(fragmentNormal, HV)), 32) / (Distance * Distance)) * attenuation;
     }
     else
     {
         return vec3(0.0, 0.0, 0.0);
     }
-
-    // vec3 result = vec3(0.0);
-
-    // float distance = length(cameraPosition - fragmentPosition);
-    // float attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
-    
-
-    // float cutoff = 30;
-    // float outerCutoff = 45;
-    // vec3 toCamera = normalize(cameraPosition - fragmentPosition);
-    // float theta = dot(cameraDirection, toCamera);
-    // float epsilon = cutoff - outerCutoff;
-    // float intensity = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
-
-    // float innerOuterConeSmoothStep = smoothstep(outerCutoff, cutoff, theta);
-    // attenuation *= innerOuterConeSmoothStep;
-
-    // result += vec3(1.0) * intensity * texture(imageTexture, fragmentTexCoord).rgb * attenuation;
-    // return result;
 }
