@@ -12,40 +12,40 @@ import math
 class GraphicsEngine:
 
     def __init__(self, numLights):
-        self.square = Mesh("assets/models/square.obj")
-        self.rayman = Mesh("assets/models/raymanModel.obj")
+        self.square = Mesh("src/assets/models/square.obj")
         self.floor = Floor(w=5.0, h=5.0)
 
-        self.door_texture = Material("assets/textures/Wooden_Door.png")
+        self.door = Mesh("src/assets/models/Door.obj")
+        self.door_texture = Material("src/assets/textures/Wooden_Door.png")
 
         self.wall_mesh = CubeWallMesh() 
 
         self.ceiling = Ceiling(w=5.0, h=5.0)
-        self.shader = self.createShader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl")
-        self.light_shader = self.createShader("assets/shaders/vertex_light.glsl", "assets/shaders/fragment_light.glsl")
+        self.shader = self.createShader("src/assets/shaders/vertex.glsl", "src/assets/shaders/fragment.glsl")
+        self.light_shader = self.createShader("src/assets/shaders/vertex_light.glsl", "src/assets/shaders/fragment_light.glsl")
 
         # Changed the texture to a compressed version, might help with performance
-        self.carpet_texture = Material("assets/textures/compressed/dirtycarpet-min.png")
-        self.wall_texture = Material("assets/textures/compressed/yellowwallpaper-min.jpg")
-        self.ceiling_texture = Material("assets/textures/compressed/ceiling-tile-min.png")
+        self.carpet_texture = Material("src/assets/textures/compressed/dirtycarpet-min.png")
+        self.wall_texture = Material("src/assets/textures/compressed/yellowwallpaper-min.jpg")
+        self.ceiling_texture = Material("src/assets/textures/compressed/ceiling-tile-min.png")
 
         # Enemy 
-        self.enemy_texture_1 = Material("assets/textures/enemy/45.png")
-        self.enemy_texture_2 = Material("assets/textures/enemy/46.png")
-        self.enemy_texture_3 = Material("assets/textures/enemy/47.png")
-        self.enemy_texture_4 = Material("assets/textures/enemy/48.png")
+        self.enemy_texture_1 = Material("src/assets/textures/enemy/45.png")
+        self.enemy_texture_2 = Material("src/assets/textures/enemy/46.png")
+        self.enemy_texture_3 = Material("src/assets/textures/enemy/47.png")
+        self.enemy_texture_4 = Material("src/assets/textures/enemy/48.png")
         self.enemy_billboard = BillBoard(w=0.5, h=0.5)
 
         # exit 
-        self.exit_texture = Material("assets/textures/exit/exit.png")
-        self.exit_billboard = BillBoard(w=0.5, h=1.0)
+        self.exit_texture = Material("src/assets/textures/exit/exit.png")
+        self.exit_billboard = BillBoard(w=0.5, h=0.5)
         
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
         self.lights_on_loc = glGetUniformLocation(self.shader.shader, "lightsOn")
         self.flashlight_loc = glGetUniformLocation(self.shader.shader, "flashlight")
 
         #Key
-        self.key_texture = Material("assets/textures/key.png")
+        self.key_texture = Material("src/assets/textures/key.png")
         self.key_billboard = BillBoard(w=0.2, h=0.2)
 
         glClearColor(0.2, 0.5, 0.5, 1)
@@ -211,11 +211,14 @@ class GraphicsEngine:
                 continue
 
             key_position = np.array(key.position)
-            key_rotation = key.rotation
+            direction_from_player = key_position - player_position
+            angle1 = np.arctan2(direction_from_player[0], -direction_from_player[2])  # X, Z
+            dist2d = np.sqrt(direction_from_player[0]**2 + direction_from_player[2]**2)
+            angle2 = np.arctan2(direction_from_player[1], dist2d)
             model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
             scaling_factor = 3.0  
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32)))
-            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=key_rotation))
+            model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
             model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(key_position, dtype=np.float32))
             self.shader["model_matrix"] = model_transform
             glBindVertexArray(self.key_billboard.vao)

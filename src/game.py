@@ -44,8 +44,10 @@ def initialize_glfw():
 
 class Scene:
 
-    def __init__(self, window) -> None:
+    def __init__(self, window, enemy_speed, number_of_keys):
         self.window = window
+        self.enemy_speed = enemy_speed
+        self.number_of_keys = number_of_keys
         # Enemy
         self.start_moving = True
         
@@ -79,7 +81,8 @@ class Scene:
 
         # Objective
         self.collected_key_count = 0
-        self.keys, self.total_key_count = self.place_keys(3)
+        print("Number of keys " + str(number_of_keys))
+        self.keys, self.total_key_count = self.place_keys(number_of_keys)
         self.updated_exit_position = False
         
         # Enemy
@@ -325,7 +328,7 @@ class Scene:
                 if axis == 1:  # Skip the y-axis
                     continue
 
-                step_size = 0.008 # ENEMY MOVEMENT SPEED
+                step_size = self.enemy_speed # ENEMY MOVEMENT SPEED
                 temp_position = enemy_position.copy()
                 temp_position[axis] += direction_to_player[axis] * step_size
 
@@ -384,10 +387,10 @@ class Scene:
 
 class App:
 
-    def __init__(self, window):
+    def __init__(self, window, enemy_speed, number_of_keys):
         
         self.window = window
-        self.scene = Scene(window)
+        self.scene = Scene(window, enemy_speed, number_of_keys)
         self.renderer = GraphicsEngine(len(self.scene.lights))
 
         self.lastTime = glfw.get_time()
@@ -444,6 +447,7 @@ class App:
             #Timing
             self.calculateFramerate()
         self.quit()
+        return self.scene.player_dead, self.scene.player_won
 
     def handleKeys(self):
         combo = 0
@@ -520,6 +524,84 @@ class App:
         glfw.terminate()
         self.renderer.quit()
 
+
+class SettingsMenu:
+    def __init__(self, screen, font_path):
+        self.screen = screen
+        self.font_path = font_path
+        self.clock = pygame.time.Clock()
+        self.options = ["Enemy Speed", "Number of Keys", "Close"]
+        self.selected_option = 0
+        self.enemy_speed = 0.008
+        self.number_of_keys = 3
+        self.font = pygame.font.Font(font_path, 30)
+        self.value_change_amount = {
+            "Enemy Speed": 0.001,
+            "Number of Keys": 1
+        }
+
+    def show(self):
+        running = True
+        while running:
+            self.screen.fill((0, 0, 0))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        if self.selected_option == len(self.options) - 1:  # Close option
+                            running = False
+                        else:
+                            self.selected_option = (self.selected_option + 1) % len(self.options)
+                    elif event.key == pygame.K_w:
+                        self.adjust_option(-1)
+                        print("enemy speed = " + str(self.enemy_speed))
+                    elif event.key == pygame.K_s:
+                        self.adjust_option(1)
+
+            self.draw_menu()
+            pygame.display.update()
+
+        # Return the updated settings when exiting the menu
+        return self.enemy_speed, self.number_of_keys
+
+    def adjust_option(self, direction):
+        option = self.options[self.selected_option]
+        if option == "Enemy Speed":
+            self.enemy_speed += self.value_change_amount[option] * direction
+            self.enemy_speed = max(0, self.enemy_speed)  # Ensure enemy_speed doesn't go below 0
+        elif option == "Number of Keys":
+            self.number_of_keys += self.value_change_amount[option] * direction
+            self.number_of_keys = max(1, self.number_of_keys)  # Ensure number_of_keys doesn't go below 1
+
+    def draw_menu(self):
+        for i, option in enumerate(self.options):
+            color = (255, 0, 0) if i == self.selected_option else (255, 255, 255)
+            text_surface = self.font.render(f"{option}: {self.get_option_value(option)}", True, color)
+            text_rect = text_surface.get_rect(center=(400, 200 + i * 100))
+            self.screen.blit(text_surface, text_rect)
+
+    def get_option_value(self, option):
+        if option == "Enemy Speed":
+            return f"{self.enemy_speed:.3f}"
+        elif option == "Number of Keys":
+            return str(self.number_of_keys)
+        else:
+            return ""
+        
+    def get_enemy_speed(self):
+        return self.enemy_speed
+
+    def get_number_of_keys(self):
+        return self.number_of_keys
+    def get_current_settings(self):
+        return self.enemy_speed, self.number_of_keys
+
+
+
+
+
 class StartMenu:
     def __init__(self, screen, frame_folder, font_path):  
         self.screen = screen
@@ -529,10 +611,10 @@ class StartMenu:
         self.running = True
         self.clock = pygame.time.Clock()
         self.fps = 2
-        self.font_size = 60
-        self.font = pygame.font.Font(font_path, self.font_size)  
+        self.font = pygame.font.Font(font_path, 60)
         self.options = ["Start Game", "Settings", "Quit"]
-        self.selected_option = 0  
+        self.selected_option = 0 
+        self.font_path = font_path
 
 
     def load_frames(self):
@@ -557,7 +639,12 @@ class StartMenu:
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        return self.options[self.selected_option]
+                        if self.selected_option == 0:  # Start Game
+                            return 'start_game'
+                        elif self.selected_option == 1:  # Settings
+                            return 'settings'  # Open the settings menu
+                        elif self.selected_option == 2:  # Quit
+                            return 'quit'
                     elif event.key == pygame.K_w:  
                         self.selected_option = (self.selected_option - 1) % len(self.options)
                     elif event.key == pygame.K_s:  
@@ -569,7 +656,10 @@ class StartMenu:
             pygame.display.update()
             self.clock.tick(self.fps)
 
-        return 'quit'
+    def run_settings_menu(self):
+        settings_menu = SettingsMenu(self.screen, self.font_path)
+        settings_menu.show()
+        self.show()
     
     def draw_title(self):
         title_surface = self.font.render("MazeGame", True, (255, 0, 0))  
@@ -583,9 +673,9 @@ class StartMenu:
             text_rect = text_surface.get_rect(center=(400, 300 + i * 70))  
             self.screen.blit(text_surface, text_rect)
 
-def start_game():
+def start_game(enemy_speed, number_of_keys):
     window = initialize_glfw()
-    myApp = App(window)
+    myApp = App(window, enemy_speed, number_of_keys)
     return myApp
 
 class DeathMenu:
@@ -625,48 +715,88 @@ class DeathMenu:
 
     def draw_title(self):
         if self.scene.player_dead:
+            background_image_path = 'src/assets/textures/grave_stone.png'
+            background_image = pygame.image.load(background_image_path)
+            background_image = pygame.transform.scale(background_image, (800, 600)) 
+            self.screen.blit(background_image, (0, 0))
             title_surface = self.font.render("You Died", True, (255, 0, 0))
         elif self.scene.player_won:
-            title_surface = self.font.render("You Won", True, (173, 216, 230))
+            background_image_path = 'src/assets/textures/trophy.png'
+            background_image = pygame.image.load(background_image_path)
+            background_image = pygame.transform.scale(background_image, (800, 600)) 
+            self.screen.blit(background_image, (0, 0))
+            title_surface = self.font.render("You Won", True, (0, 0, 128))
         title_rect = title_surface.get_rect(center=(400, 50)) 
         self.screen.blit(title_surface, title_rect)
 
     def draw_menu(self):
+        oval_color = (255, 255, 255) 
+        text_color = (255, 0, 0) 
+        oval_margin = 15 
+
         for i, option in enumerate(self.options):
-            color = (255, 0, 0) if i == self.selected_option else (255, 255, 255)
-            text_surface = self.font.render(option, True, color)
-            text_rect = text_surface.get_rect(center=(400, 300 + i * 70))  
+            text_surface = self.font.render(option, True, text_color)
+            text_rect = text_surface.get_rect(center=(400, 300 + i * 100))
+            if i == self.selected_option:
+                oval_rect = text_rect.inflate(oval_margin * 2, oval_margin)
+                pygame.draw.ellipse(self.screen, oval_color, oval_rect, 2)
+
             self.screen.blit(text_surface, text_rect)
 
 
 def main_menu():
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
+    frame_folder = "src/assets/MazeGameFrames"
+    font_path = "src/assets/fonts/DotGothic16-Regular.ttf"
 
-    frame_folder = "assets/MazeGameFrames/"  
-    font_path = "assets/fonts/DotGothic16-Regular.ttf"  
-    menu = StartMenu(screen, frame_folder, font_path)  
+    enemy_speed = 0.008
+    number_of_keys = 3
 
-    action = menu.show()
+    while True:
+        menu = StartMenu(screen, frame_folder, font_path)
+        action = menu.show()
+
+        if action == 'start_game':
+            pygame.quit()
+            game = start_game(enemy_speed, number_of_keys)
+            player_dead, player_won = game.mainLoop()
+            pygame.init()
+            screen = pygame.display.set_mode((800, 600))
+            if player_dead or player_won:
+                death_menu = DeathMenu(screen, font_path, game.scene)
+                death_menu_action = death_menu.show()
+                if death_menu_action == 'Quit':
+                    break
+
+        elif action == 'settings':
+            settings_menu = SettingsMenu(screen, font_path)
+            # Receive updated settings from the settings menu
+            enemy_speed, number_of_keys = settings_menu.show()
+            print(f"Updated Settings - Enemy Speed: {enemy_speed}, Number of Keys: {number_of_keys}")
+
+        elif action == 'quit':
+            break
+
     pygame.quit()
+    sys.exit()
 
-    if action == 'Start Game':
-        return start_game()  
-    elif action == 'Quit':
-        sys.exit()
+
 
 
 if __name__ == "__main__":
-    myApp = main_menu()  
-    if myApp:  
-        pygame.init()
-        screen = pygame.display.set_mode((800, 600))
-        font_path = "assets/fonts/DotGothic16-Regular.ttf"
-        death_menu = DeathMenu(screen, font_path, myApp.scene)  
-        action = death_menu.show()
-        pygame.quit()
+    i = 1
+    while i == 1:
+        myApp = main_menu()  
+        if myApp:  
+            pygame.init()
+            screen = pygame.display.set_mode((800, 600))
+            font_path = "src/assets/fonts/DotGothic16-Regular.ttf"
+            death_menu = DeathMenu(screen, font_path, myApp.scene)  
+            action = death_menu.show()
+            pygame.quit()
 
-        if action == 'Retry':
-            main_menu()
-        else:
-            sys.exit()
+            if action == 'Retry':
+                main_menu()
+            else:
+                sys.exit()
