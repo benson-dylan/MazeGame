@@ -38,7 +38,7 @@ class GraphicsEngine:
 
         # exit 
         self.exit_texture = Material("assets/textures/exit/exit.png")
-        self.exit_billboard = BillBoard(w=0.5, h=0.5)
+        self.exit_billboard = BillBoard(w=0.5, h=1.0)
         
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
         self.lights_on_loc = glGetUniformLocation(self.shader.shader, "lightsOn")
