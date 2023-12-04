@@ -13,7 +13,10 @@ class GraphicsEngine:
 
     def __init__(self, numLights):
         self.square = Mesh("assets/models/square.obj")
+        self.rayman = Mesh("assets/models/raymanModel.obj")
         self.floor = Floor(w=5.0, h=5.0)
+
+        self.door_texture = Material("assets/textures/Wooden_Door.png")
 
         self.wall_mesh = CubeWallMesh() 
 
@@ -35,9 +38,11 @@ class GraphicsEngine:
 
         # exit 
         self.exit_texture = Material("assets/textures/exit/exit.png")
-        self.exit_billboard = BillBoard(w=0.5, h=0.5)
+        self.exit_billboard = BillBoard(w=0.5, h=1.0)
         
         self.num_light_loc = glGetUniformLocation(self.shader.shader, "numLights")
+        self.lights_on_loc = glGetUniformLocation(self.shader.shader, "lightsOn")
+        self.flashlight_loc = glGetUniformLocation(self.shader.shader, "flashlight")
 
         #Key
         self.key_texture = Material("assets/textures/key.png")
@@ -52,6 +57,7 @@ class GraphicsEngine:
         glUseProgram(self.shader.shader)
         glUniform1i(glGetUniformLocation(self.shader.shader, "imageTexture"), 0)
         glUniform1i(self.num_light_loc, numLights)
+        glUniform1i(self.lights_on_loc, 1)
 
         projection_matrix = pyrr.matrix44.create_perspective_projection(45, 640/480, 0.1, 100, np.float32)
         glUniformMatrix4fv(glGetUniformLocation(self.shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
@@ -71,6 +77,7 @@ class GraphicsEngine:
             ],
         }
         self.cameraPosLoc = glGetUniformLocation(self.shader.shader, "cameraPosition")
+        self.cameraDirLoc = glGetUniformLocation(self.shader.shader, "cameraDirection")
 
         glUseProgram(self.light_shader.shader)
         glUniformMatrix4fv(glGetUniformLocation(self.light_shader.shader, "projection_matrix"), 1, GL_FALSE, projection_matrix)
@@ -80,7 +87,7 @@ class GraphicsEngine:
         shader = sl.ShaderProgram(vertexFilepath, fragmentFilepath)
         return shader 
     
-    def render(self, scene):
+    def render(self, scene, flashlight):
         #Refresh screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -94,9 +101,9 @@ class GraphicsEngine:
             glUniform3fv(self.lightLocation["color"][i], 1, light.color)
             glUniform1f(self.lightLocation["intensity"][i], light.intensity)
 
-        glUniform3fv(self.cameraPosLoc, 1, scene.player.position)
+        glUniform3fv(self.cameraPosLoc, 1, np.array(scene.player.position, dtype=np.float32))
+        glUniform3fv(self.cameraDirLoc, 1, np.array(scene.player.get_camera_direction(), dtype=np.float32))
 
-        
         for wall in scene.walls:
 
             self.wall_texture.use()
@@ -170,7 +177,7 @@ class GraphicsEngine:
 
         # ----------------------------------------------------
         # Exit 
-        self.exit_texture.use()
+        self.door_texture.use()
         exit = scene.exit  # Assuming scene.exit is the single exit object
 
         portal_position = np.array(exit.position)
@@ -187,13 +194,14 @@ class GraphicsEngine:
         scaling_factor = exit.size 
         model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_scale(np.array([scaling_factor, scaling_factor, scaling_factor], dtype=np.float32), dtype=np.float32))
 
-        model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
+        #model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_z_rotation(theta=angle2, dtype=np.float32))
         model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_y_rotation(theta=angle1 + math.pi / 2, dtype=np.float32))
         model_transform = pyrr.matrix44.multiply(model_transform, pyrr.matrix44.create_from_translation(portal_position, dtype=np.float32))
 
         self.shader["model_matrix"] = model_transform
         glBindVertexArray(self.exit_billboard.vao)
         glDrawArrays(GL_TRIANGLES, 0, self.exit_billboard.n_vertices)
+
 
         # ----------------------------------------------------
         # Render keys
@@ -213,6 +221,10 @@ class GraphicsEngine:
             glBindVertexArray(self.key_billboard.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.key_billboard.n_vertices)
 
+
+        if scene.total_key_count - scene.collected_key_count == 1:
+            glUniform1i(self.lights_on_loc, 0)
+        glUniform1i(self.flashlight_loc, flashlight)
 
         glUseProgram(self.light_shader.shader)
 
@@ -423,8 +435,10 @@ class Mesh:
         self.vertices = self.obj.vertices
         self.n_vertices = self.obj.n_vertices
         self.dia = self.obj.dia
-        self.scale = 4.0 / self.dia
+        self.scale = 5.0 / self.dia
         self.center = self.obj.center
+
+        print(f"Door center: {self.center}")
 
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)

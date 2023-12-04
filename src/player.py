@@ -43,7 +43,8 @@ class Player:
     def get_camera_direction(self):
         theta_rad = np.radians(self.theta)
         phi_rad = np.radians(self.phi)
-        forward_x = np.sin(theta_rad) * np.cos(phi_rad)
+        forward_x = np.cos(theta_rad) * np.cos(phi_rad)
         forward_y = np.sin(phi_rad)
-        forward_z = -np.cos(theta_rad) * np.cos(phi_rad)
+        forward_z = -np.sin(theta_rad) * np.cos(phi_rad)
         return np.array([forward_x, forward_y, forward_z])
+    
